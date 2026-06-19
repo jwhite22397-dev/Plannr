@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Plannr</title>
+<style>
+/* ------------------------------------------------------------------
+   Plannr - an e-ink-first life planner for old Kindles.
+   Design goals:
+     * Pure black/white, high contrast (grayscale e-ink)
+     * Big touch targets (fingers on a 6" screen)
+     * No webfonts, no images, no emoji (old Kindles show boxes)
+     * Strong, instant visual rewards instead of animation
+       (e-ink refresh is slow; bold state changes feel great)
+   ------------------------------------------------------------------ */
+
+* { -webkit-box-sizing: border-box; box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: #ffffff;
+  color: #000000;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  line-height: 1.35;
+  -webkit-text-size-adjust: 100%;
+}
+
+body { padding: 0 0 96px 0; }     /* leave room for fixed bottom nav */
+
+/* ----- generic ----- */
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 14px; }
+.hidden { display: none !important; }
+.center { text-align: center; }
+.muted { color: #555555; }
+.tiny { font-size: 14px; }
+.big { font-size: 26px; }
+.strike { text-decoration: line-through; color: #777777; }
+.spacer { height: 14px; }
+.hr { border: 0; border-top: 3px solid #000; margin: 14px 0; }
+.dashed { border: 0; border-top: 2px dashed #999; margin: 12px 0; }
+
+/* ----- header ----- */
+.topbar {
+  border-bottom: 4px solid #000;
+  padding: 10px 0 12px 0;
+  margin-bottom: 12px;
+}
+.brand {
+  font-size: 30px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  display: inline-block;
+}
+.brand .dot { /* the "tracking dot" of the logo, drawn in CSS */
+  display: inline-block;
+  width: 14px; height: 14px;
+  background: #000;
+  border-radius: 50%;
+  margin-left: 2px;
+  vertical-align: baseline;
+}
+.datehead { float: right; text-align: right; font-size: 15px; padding-top: 8px; }
+
+/* level + xp strip */
+.statrow { margin-top: 12px; }
+.statcell {
+  display: inline-block;
+  vertical-align: middle;
+  border: 3px solid #000;
+  padding: 6px 10px;
+  margin: 0 6px 6px 0;
+  font-size: 15px;
+  font-weight: bold;
+  min-width: 84px;
+  text-align: center;
+}
+.statcell .num { font-size: 24px; display: block; }
+.statcell.solid { background: #000; color: #fff; }
+
+/* xp bar */
+.xpwrap { margin-top: 8px; }
+.xpbar {
+  border: 3px solid #000;
+  height: 26px;
+  position: relative;
+  background: #fff;
+}
+.xpfill { background: #000; height: 100%; width: 0%; }
+.xplabel {
+  font-size: 14px; margin-top: 4px; text-align: center; font-weight: bold;
+}
+
+/* ----- section headings ----- */
+.h2 {
+  font-size: 22px;
+  font-weight: bold;
+  border-bottom: 3px solid #000;
+  padding-bottom: 4px;
+  margin: 6px 0 12px 0;
+}
+
+/* ----- day progress ----- */
+.dayprog { border: 3px solid #000; padding: 12px; margin-bottom: 14px; }
+.dayprog .label { font-weight: bold; font-size: 18px; margin-bottom: 8px; }
+.pbar { border: 3px solid #000; height: 34px; background: #fff; }
+.pfill { background: #000; height: 100%; width: 0%; }
+.praise { margin-top: 10px; font-style: italic; font-size: 17px; }
+
+/* ----- task / habit rows ----- */
+ul.list { list-style: none; clear: both; }
+li.item {
+  border: 3px solid #000;
+  margin-bottom: 10px;
+  padding: 0;
+  overflow: hidden;
+}
+li.item.done { background: #f0f0f0; }
+
+.checkbtn {
+  float: left;
+  width: 62px;
+  height: 62px;
+  border: 0;
+  border-right: 3px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 34px;
+  line-height: 56px;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.checkbtn.on { background: #000; color: #fff; }
+
+.itembody {
+  margin-left: 62px;
+  padding: 8px 10px;
+  min-height: 62px;
+  position: relative;
+}
+.itemtext { font-size: 19px; display: block; padding-right: 56px; word-wrap: break-word; }
+.itemmeta { font-size: 13px; color: #555; margin-top: 2px; }
+
+.flag { /* priority flag, drawn with text */
+  display: inline-block;
+  border: 2px solid #000;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 0 5px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.flag.hi { background: #000; color: #fff; }
+
+.delbtn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  margin-top: -22px;
+  width: 44px; height: 44px;
+  border: 3px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 22px;
+  line-height: 38px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+/* habit streak dots */
+.weekrow { margin-top: 6px; white-space: nowrap; }
+.wk {
+  display: inline-block;
+  width: 26px; height: 26px;
+  border: 2px solid #000;
+  margin-right: 4px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 22px;
+}
+.wk.fill { background: #000; color: #fff; }
+.wk.today { border-width: 3px; }
+
+/* ----- add bar ----- */
+.addbar { margin: 4px 0 18px 0; }
+.addbar input.txt {
+  width: 100%;
+  border: 3px solid #000;
+  padding: 12px;
+  font-size: 18px;
+  font-family: Georgia, serif;
+  -webkit-appearance: none;
+  background: #fff;
+  color: #000;
+}
+.addrow2 { margin-top: 8px; overflow: hidden; }   /* contains floated ADD button */
+.prio-pick { display: inline-block; }
+.pbtn {
+  border: 3px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 8px 10px;
+  margin-right: 6px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+.pbtn.sel { background: #000; color: #fff; }
+.addgo {
+  float: right;
+  border: 3px solid #000;
+  background: #000;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 20px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+/* ----- garden / tree ----- */
+.treebox {
+  border: 3px solid #000;
+  padding: 10px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+pre.tree {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 15px;
+  line-height: 1.15;
+  white-space: pre;
+  display: inline-block;
+  text-align: left;
+}
+.treestage { font-weight: bold; font-size: 18px; margin-top: 6px; }
+
+/* ----- achievements ----- */
+.ach {
+  border: 3px solid #000;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.ach.locked { border-style: dashed; color: #888; }
+.ach .name { font-weight: bold; font-size: 18px; }
+.ach .seal {
+  float: right;
+  border: 2px solid #000;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 2px 8px;
+}
+.ach.locked .seal { border-style: dashed; color: #888; }
+
+/* ----- stats grid ----- */
+.statbox {
+  border: 3px solid #000;
+  display: inline-block;
+  width: 47%;
+  margin: 0 1% 10px 1%;
+  padding: 12px;
+  text-align: center;
+  vertical-align: top;
+}
+.statbox .v { font-size: 30px; font-weight: bold; display: block; }
+.statbox .k { font-size: 14px; }
+
+/* ----- bottom nav ----- */
+.nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-top: 4px solid #000;
+  height: 78px;
+}
+.nav .navin { max-width: 720px; margin: 0 auto; }
+.tab {
+  display: block;
+  float: left;
+  width: 25%;
+  height: 74px;
+  border: 0;
+  border-right: 2px solid #000;
+  background: #fff;
+  color: #000;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  -webkit-appearance: none;
+  padding-top: 12px;
+}
+.tab:last-child { border-right: 0; }
+.tab.active { background: #000; color: #fff; }
+.tab .ico { font-size: 22px; display: block; line-height: 1.1; }
+
+/* ----- toast (reward feedback) ----- */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  margin-left: -130px;
+  width: 260px;
+  border: 4px solid #000;
+  background: #fff;
+  color: #000;
+  text-align: center;
+  padding: 16px;
+  z-index: 50;
+}
+.toast .big { font-size: 30px; font-weight: bold; display: block; }
+.toast .sub { font-size: 16px; margin-top: 6px; }
+
+/* ----- modal (level up / achievement) ----- */
+.mask {
+  position: fixed; left: 0; top: 0; right: 0; bottom: 0;
+  background: #000;
+  z-index: 60;
+}
+.modal {
+  position: fixed;
+  left: 50%; top: 50%;
+  width: 300px;
+  margin-left: -150px;
+  margin-top: -170px;
+  background: #fff;
+  border: 5px solid #000;
+  z-index: 61;
+  padding: 18px;
+  text-align: center;
+}
+.modal .kicker { font-size: 16px; font-weight: bold; letter-spacing: 2px; }
+.modal .title { font-size: 32px; font-weight: bold; margin: 8px 0; }
+.modal pre.tree { font-size: 13px; }
+.modal .okbtn {
+  margin-top: 14px;
+  border: 3px solid #000;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 10px 28px;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+/* empty state */
+.empty { border: 3px dashed #999; padding: 22px; text-align: center; color: #666; }
+
+/* settings rows */
+.setrow { border: 3px solid #000; padding: 12px; margin-bottom: 10px; }
+.setbtn {
+  border: 3px solid #000; background: #fff; color: #000;
+  font-size: 15px; font-weight: bold; padding: 8px 14px; cursor: pointer;
+  -webkit-appearance: none;
+}
+.setbtn.danger { background: #000; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="datehead" id="datehead">&nbsp;</div>
+    <span class="brand">Plannr<span class="dot"></span></span>
+
+    <div class="statrow">
+      <span class="statcell solid"><span class="num" id="lvlNum">1</span>LEVEL</span>
+      <span class="statcell"><span class="num" id="streakNum">0</span>DAY STREAK</span>
+      <span class="statcell"><span class="num" id="doneNum">0</span>DONE TODAY</span>
+    </div>
+
+    <div class="xpwrap">
+      <div class="xpbar"><div class="xpfill" id="xpFill"></div></div>
+      <div class="xplabel" id="xpLabel">0 / 100 XP to level 2</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TODAY ===================== -->
+<div class="wrap view" id="view-today">
+  <div class="dayprog">
+    <div class="label" id="dayLabel">Today's progress</div>
+    <div class="pbar"><div class="pfill" id="dayFill"></div></div>
+    <div class="praise" id="praise">Add your first task and let's get rolling.</div>
+  </div>
+
+  <div class="addbar">
+    <input class="txt" id="taskInput" type="text" placeholder="What needs doing today?" maxlength="120">
+    <div class="addrow2">
+      <span class="prio-pick">
+        <button class="pbtn" data-prio="high" id="prioHigh">! TOP</button>
+        <button class="pbtn sel" data-prio="normal" id="prioNormal">NORMAL</button>
+        <button class="pbtn" data-prio="low" id="prioLow">LATER</button>
+      </span>
+      <button class="addgo" id="addTaskBtn">ADD +</button>
+    </div>
+  </div>
+
+  <div class="h2">To-Do</div>
+  <ul class="list" id="taskList"></ul>
+  <div class="empty hidden" id="taskEmpty">All clear. Add something or enjoy the calm.</div>
+</div>
+
+<!-- ===================== HABITS ===================== -->
+<div class="wrap view hidden" id="view-habits">
+  <div class="h2">Daily Habits</div>
+  <p class="muted tiny" style="margin-bottom:12px;">Small things, every day. Each day done feeds the streak.</p>
+
+  <div class="addbar">
+    <input class="txt" id="habitInput" type="text" placeholder="New daily habit (e.g. Drink water)" maxlength="80">
+    <div class="addrow2">
+      <button class="addgo" id="addHabitBtn">ADD HABIT +</button>
+    </div>
+  </div>
+
+  <ul class="list" id="habitList"></ul>
+  <div class="empty hidden" id="habitEmpty">No habits yet. Start with one tiny thing.</div>
+</div>
+
+<!-- ===================== GARDEN ===================== -->
+<div class="wrap view hidden" id="view-garden">
+  <div class="h2">Your Growth Tree</div>
+  <div class="treebox">
+    <pre class="tree" id="treeArt"></pre>
+    <div class="treestage" id="treeStage">A tiny seed</div>
+    <div class="tiny muted" id="treeNext"></div>
+  </div>
+
+  <div class="h2">Stats</div>
+  <div class="center">
+    <div class="statbox"><span class="v" id="sTasks">0</span><span class="k">tasks completed</span></div>
+    <div class="statbox"><span class="v" id="sHabits">0</span><span class="k">habit check-ins</span></div>
+    <div class="statbox"><span class="v" id="sBest">0</span><span class="k">best streak (days)</span></div>
+    <div class="statbox"><span class="v" id="sPerfect">0</span><span class="k">perfect days</span></div>
+  </div>
+
+  <div class="h2">Achievements</div>
+  <div id="achList"></div>
+</div>
+
+<!-- ===================== MENU / SETTINGS ===================== -->
+<div class="wrap view hidden" id="view-menu">
+  <div class="h2">Menu</div>
+
+  <div class="setrow">
+    <div style="font-weight:bold; margin-bottom:6px;">Carry over unfinished tasks</div>
+    <div class="tiny muted" style="margin-bottom:10px;">When a new day starts, unfinished to-dos stay; finished ones are cleared.</div>
+    <button class="setbtn" id="rolloverBtn">Run day reset now</button>
+  </div>
+
+  <div class="setrow">
+    <div style="font-weight:bold; margin-bottom:6px;">A note to yourself</div>
+    <input class="txt" id="noteInput" type="text" placeholder="Why does this matter to you?" maxlength="140">
+    <div class="tiny muted" style="margin-top:6px;">Shown on your Today screen for a little extra push.</div>
+  </div>
+
+  <div class="setrow">
+    <div style="font-weight:bold; margin-bottom:6px;">Backup &amp; restore</div>
+    <div class="tiny muted" style="margin-bottom:10px;">Everything is stored on this device only. Copy this text somewhere safe to back up.</div>
+    <input class="txt" id="exportBox" type="text" readonly>
+    <div style="margin-top:8px;">
+      <button class="setbtn" id="importBtn">Restore from text</button>
+    </div>
+  </div>
+
+  <div class="setrow">
+    <div style="font-weight:bold; margin-bottom:6px;">Danger zone</div>
+    <button class="setbtn danger" id="resetBtn">Erase everything</button>
+  </div>
+
+  <div class="center tiny muted" style="margin-top:20px;">Plannr &middot; offline &middot; made for e-ink</div>
+</div>
+
+<!-- ===================== NAV ===================== -->
+<div class="nav">
+  <div class="navin">
+    <button class="tab active" data-view="today"><span class="ico">[ ]</span>Today</button>
+    <button class="tab" data-view="habits"><span class="ico">~~~</span>Habits</button>
+    <button class="tab" data-view="garden"><span class="ico">/|\</span>Growth</button>
+    <button class="tab" data-view="menu"><span class="ico">===</span>Menu</button>
+  </div>
+</div>
+
+<!-- toast + modal -->
+<div class="toast hidden" id="toast"><span class="big" id="toastBig">+10 XP</span><span class="sub" id="toastSub">Nice!</span></div>
+<div class="mask hidden" id="mask"></div>
+<div class="modal hidden" id="modal">
+  <div class="kicker" id="modalKicker">LEVEL UP</div>
+  <div class="title" id="modalTitle">Level 2</div>
+  <pre class="tree" id="modalArt"></pre>
+  <div id="modalBody" class="muted"></div>
+  <button class="okbtn" id="modalOk">CONTINUE</button>
+</div>
+
+<script>
+/* ==================================================================
+   Plannr engine - ES5 only (old Kindle WebKit friendly).
+   No arrow functions, no const/let, no template strings.
+   ================================================================== */
+(function () {
+  "use strict";
+
+  var STORE_KEY = "plannr_v1";
+
+  /* ---------- tiny helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function on(el, ev, fn) {
+    if (!el) { return; }
+    if (el.addEventListener) { el.addEventListener(ev, fn, false); }
+    else if (el.attachEvent) { el.attachEvent("on" + ev, fn); }
+  }
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function todayKey(d) {
+    d = d || new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function uid() {
+    return "x" + (new Date().getTime()) + Math.floor(Math.random() * 1000);
+  }
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+  /* ---------- persistence ---------- */
+  var memFallback = null;
+  function save() {
+    var json = JSON.stringify(state);
+    try { window.localStorage.setItem(STORE_KEY, json); }
+    catch (e) { memFallback = json; }
+    refreshExportBox();
+  }
+  function load() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(STORE_KEY); }
+    catch (e) { raw = memFallback; }
+    if (!raw) { return null; }
+    try { return JSON.parse(raw); }
+    catch (e2) { return null; }
+  }
+
+  /* ---------- default state ---------- */
+  function freshState() {
+    return {
+      version: 1,
+      xp: 0,
+      level: 1,
+      streak: 0,
+      bestStreak: 0,
+      lastStreakDate: null,
+      totals: { tasksDone: 0, habitsDone: 0, perfectDays: 0 },
+      achievements: {},
+      tasks: [],
+      habits: [],
+      note: "",
+      lastOpenDate: todayKey()
+    };
+  }
+
+  var state = load() || freshState();
+  // make sure older saves have all fields
+  (function patch() {
+    var def = freshState();
+    for (var k in def) {
+      if (def.hasOwnProperty(k) && typeof state[k] === "undefined") { state[k] = def[k]; }
+    }
+    if (!state.totals) { state.totals = def.totals; }
+  })();
+
+  /* ==================================================================
+     GAMIFICATION
+     ================================================================== */
+  var XP_TASK = 10;
+  var XP_TASK_HIGH = 15;
+  var XP_HABIT = 12;
+  var XP_PERFECT_DAY = 40;
+
+  function xpForLevel(level) {
+    // rising curve: lvl1->2 = 100, then +60 each level
+    return 100 + (level - 1) * 60;
+  }
+  function levelFloorXp(level) {
+    var total = 0;
+    for (var i = 1; i < level; i++) { total += xpForLevel(i); }
+    return total;
+  }
+
+  function addXp(amount) {
+    state.xp += amount;
+    // level up loop
+    while (state.xp >= levelFloorXp(state.level + 1)) {
+      state.level += 1;
+      onLevelUp(state.level);
+    }
+  }
+
+  function currentLevelProgress() {
+    var floor = levelFloorXp(state.level);
+    var need = xpForLevel(state.level);
+    var into = state.xp - floor;
+    return { into: into, need: need, pct: clamp(Math.round((into / need) * 100), 0, 100) };
+  }
+
+  /* ---------- achievements ---------- */
+  var ACHS = [
+    { id: "first",     name: "First Step",      desc: "Complete your very first task.",        test: function (s) { return s.totals.tasksDone >= 1; } },
+    { id: "ten",       name: "Getting Going",   desc: "Complete 10 tasks in total.",           test: function (s) { return s.totals.tasksDone >= 10; } },
+    { id: "fifty",     name: "Momentum",        desc: "Complete 50 tasks in total.",           test: function (s) { return s.totals.tasksDone >= 50; } },
+    { id: "hundred",   name: "Centurion",       desc: "Complete 100 tasks in total.",          test: function (s) { return s.totals.tasksDone >= 100; } },
+    { id: "habit7",    name: "Habit Former",    desc: "Log 7 habit check-ins.",                test: function (s) { return s.totals.habitsDone >= 7; } },
+    { id: "habit30",   name: "Routine Master",  desc: "Log 30 habit check-ins.",               test: function (s) { return s.totals.habitsDone >= 30; } },
+    { id: "streak3",   name: "On a Roll",       desc: "Reach a 3-day streak.",                 test: function (s) { return s.bestStreak >= 3; } },
+    { id: "streak7",   name: "Week Warrior",    desc: "Reach a 7-day streak.",                 test: function (s) { return s.bestStreak >= 7; } },
+    { id: "streak30",  name: "Unstoppable",     desc: "Reach a 30-day streak.",                test: function (s) { return s.bestStreak >= 30; } },
+    { id: "perfect",   name: "Perfect Day",     desc: "Finish every task and habit in a day.", test: function (s) { return s.totals.perfectDays >= 1; } },
+    { id: "lvl5",      name: "Seasoned",        desc: "Reach level 5.",                        test: function (s) { return s.level >= 5; } },
+    { id: "lvl10",     name: "Planner Sage",    desc: "Reach level 10.",                       test: function (s) { return s.level >= 10; } }
+  ];
+
+  function checkAchievements() {
+    var newly = [];
+    for (var i = 0; i < ACHS.length; i++) {
+      var a = ACHS[i];
+      if (!state.achievements[a.id] && a.test(state)) {
+        state.achievements[a.id] = todayKey();
+        newly.push(a);
+      }
+    }
+    return newly;
+  }
+
+  /* ---------- streak ---------- */
+  function yesterdayKey() {
+    var d = new Date();
+    d.setDate(d.getDate() - 1);
+    return todayKey(d);
+  }
+  function bumpStreak() {
+    var t = todayKey();
+    if (state.lastStreakDate === t) { return; }           // already counted today
+    if (state.lastStreakDate === yesterdayKey()) { state.streak += 1; }
+    else { state.streak = 1; }                             // reset / first day
+    state.lastStreakDate = t;
+    if (state.streak > state.bestStreak) { state.bestStreak = state.streak; }
+  }
+
+  /* ==================================================================
+     ASCII GROWTH TREE  (renders in any font, perfect for e-ink)
+     stages keyed by level
+     ================================================================== */
+  var TREE_STAGES = [
+    { min: 1,  name: "A tiny seed", art:
+      "        \n" +
+      "        \n" +
+      "        \n" +
+      "   . .  \n" +
+      "  ( o ) \n" +
+      "  '---' \n" +
+      "~~~~~~~~" },
+    { min: 2,  name: "A sprout", art:
+      "        \n" +
+      "        \n" +
+      "   \\|/  \n" +
+      "    |   \n" +
+      "    |   \n" +
+      "   _|_  \n" +
+      "~~~~~~~~" },
+    { min: 3,  name: "A seedling", art:
+      "    ,    \n" +
+      "  \\ | /  \n" +
+      "  -(*)-  \n" +
+      "  / | \\  \n" +
+      "    |    \n" +
+      "   _|_   \n" +
+      "~~~~~~~~~" },
+    { min: 5,  name: "A young tree", art:
+      "    (~)    \n" +
+      "  (~~~~~)  \n" +
+      " (~~~~~~~) \n" +
+      "  (~~~~~)  \n" +
+      "    |||    \n" +
+      "    |||    \n" +
+      "~~~~~~~~~~~" },
+    { min: 7,  name: "A leafy tree", art:
+      "    (@@@)    \n" +
+      "  (@@@@@@@)  \n" +
+      " (@@@@@@@@@) \n" +
+      "(@@@@@@@@@@@)\n" +
+      " (@@@@@@@@@) \n" +
+      "    |||||    \n" +
+      "~~~~~~~~~~~~~" },
+    { min: 10, name: "A mighty oak", art:
+      "    (#####)     \n" +
+      "  (#########)   \n" +
+      " (###########)  \n" +
+      "(#############) \n" +
+      " (###########)  \n" +
+      "  (#) ||| (#)   \n" +
+      "      |||       \n" +
+      "~~~~~~~~~~~~~~~~" },
+    { min: 14, name: "An ancient guardian", art:
+      "     (######)      \n" +
+      "   (##########)    \n" +
+      "  (############)   \n" +
+      " (##############)  \n" +
+      "(################) \n" +
+      " (##) ||||||| (##) \n" +
+      "  (#)  |||||  (#)  \n" +
+      "       |||||      \n" +
+      "~~~~~~~~~~~~~~~~~~~" }
+  ];
+
+  function treeForLevel(level) {
+    var chosen = TREE_STAGES[0];
+    for (var i = 0; i < TREE_STAGES.length; i++) {
+      if (level >= TREE_STAGES[i].min) { chosen = TREE_STAGES[i]; }
+    }
+    return chosen;
+  }
+  function nextTreeStage(level) {
+    for (var i = 0; i < TREE_STAGES.length; i++) {
+      if (TREE_STAGES[i].min > level) { return TREE_STAGES[i]; }
+    }
+    return null;
+  }
+
+  /* ==================================================================
+     FEEDBACK: toast + modal
+     ================================================================== */
+  var toastTimer = null;
+  function toast(big, sub) {
+    $("toastBig").innerHTML = big;
+    $("toastSub").innerHTML = sub || "";
+    var t = $("toast");
+    t.className = "toast";
+    if (toastTimer) { window.clearTimeout(toastTimer); }
+    toastTimer = window.setTimeout(function () { t.className = "toast hidden"; }, 1400);
+  }
+
+  var modalQueue = [];
+  function queueModal(kicker, title, art, body) {
+    modalQueue.push({ kicker: kicker, title: title, art: art, body: body });
+  }
+  function showNextModal() {
+    if (modalQueue.length === 0) { return; }
+    var m = modalQueue.shift();
+    $("modalKicker").innerHTML = m.kicker;
+    $("modalTitle").innerHTML = m.title;
+    $("modalArt").innerHTML = m.art || "";
+    $("modalBody").innerHTML = m.body || "";
+    $("mask").className = "mask";
+    $("modal").className = "modal";
+  }
+  function closeModal() {
+    $("mask").className = "mask hidden";
+    $("modal").className = "modal hidden";
+    if (modalQueue.length > 0) {
+      window.setTimeout(showNextModal, 150);
+    }
+  }
+
+  function onLevelUp(level) {
+    var tree = treeForLevel(level);
+    queueModal("LEVEL UP!", "Level " + level, tree.art,
+      "Your tree is now <b>" + tree.name + "</b>. Keep going!");
+  }
+
+  /* ==================================================================
+     ACTIONS
+     ================================================================== */
+  var pendingPrio = "normal";
+
+  function addTask() {
+    var inp = $("taskInput");
+    var text = trim(inp.value);
+    if (!text) { return; }
+    state.tasks.push({ id: uid(), text: text, done: false, prio: pendingPrio, created: todayKey() });
+    inp.value = "";
+    save();
+    renderTasks();
+    renderHeader();
+  }
+
+  function toggleTask(id) {
+    var t = findTask(id);
+    if (!t) { return; }
+    if (!t.done) {
+      t.done = true;
+      state.totals.tasksDone += 1;
+      var gain = (t.prio === "high") ? XP_TASK_HIGH : XP_TASK;
+      addXp(gain);
+      bumpStreak();
+      toast("+" + gain + " XP", randomPraise());
+      afterProgress();
+    } else {
+      // un-completing: gently roll back
+      t.done = false;
+      if (state.totals.tasksDone > 0) { state.totals.tasksDone -= 1; }
+      state.xp = Math.max(levelFloorXp(state.level), state.xp - ((t.prio === "high") ? XP_TASK_HIGH : XP_TASK));
+    }
+    save();
+    renderTasks();
+    renderHeader();
+    renderGarden();
+  }
+
+  function deleteTask(id) {
+    var arr = [];
+    for (var i = 0; i < state.tasks.length; i++) {
+      if (state.tasks[i].id !== id) { arr.push(state.tasks[i]); }
+    }
+    state.tasks = arr;
+    save();
+    renderTasks();
+    renderHeader();
+  }
+
+  function addHabit() {
+    var inp = $("habitInput");
+    var text = trim(inp.value);
+    if (!text) { return; }
+    state.habits.push({ id: uid(), text: text, history: {} });
+    inp.value = "";
+    save();
+    renderHabits();
+  }
+
+  function toggleHabit(id) {
+    var h = findHabit(id);
+    if (!h) { return; }
+    var t = todayKey();
+    if (h.history[t]) {
+      delete h.history[t];
+      if (state.totals.habitsDone > 0) { state.totals.habitsDone -= 1; }
+      state.xp = Math.max(levelFloorXp(state.level), state.xp - XP_HABIT);
+    } else {
+      h.history[t] = true;
+      state.totals.habitsDone += 1;
+      addXp(XP_HABIT);
+      bumpStreak();
+      toast("+" + XP_HABIT + " XP", "Habit done!");
+    }
+    afterProgress();
+    save();
+    renderHabits();
+    renderHeader();
+    renderGarden();
+  }
+
+  function deleteHabit(id) {
+    var arr = [];
+    for (var i = 0; i < state.habits.length; i++) {
+      if (state.habits[i].id !== id) { arr.push(state.habits[i]); }
+    }
+    state.habits = arr;
+    save();
+    renderHabits();
+  }
+
+  // perfect-day check + achievement check, after any completion
+  function afterProgress() {
+    var stats = dayStats();
+    if (stats.total > 0 && stats.done === stats.total) {
+      var t = todayKey();
+      if (state.lastPerfectDate !== t) {
+        state.lastPerfectDate = t;
+        state.totals.perfectDays += 1;
+        addXp(XP_PERFECT_DAY);
+        queueModal("PERFECT DAY", "All done!", treeForLevel(state.level).art,
+          "Every task and habit complete. +<b>" + XP_PERFECT_DAY + " XP</b> bonus!");
+      }
+    }
+    var newly = checkAchievements();
+    for (var i = 0; i < newly.length; i++) {
+      queueModal("ACHIEVEMENT", newly[i].name, badgeArt(), newly[i].desc);
+    }
+    if (modalQueue.length > 0) { window.setTimeout(showNextModal, 350); }
+  }
+
+  function badgeArt() {
+    return "   _____   \n" +
+           "  / *** \\  \n" +
+           " | ***** | \n" +
+           "  \\ *** /  \n" +
+           "   \\___/   \n" +
+           "    | |    \n" +
+           "   /   \\   ";
+  }
+
+  /* ---------- finders ---------- */
+  function findTask(id) {
+    for (var i = 0; i < state.tasks.length; i++) { if (state.tasks[i].id === id) { return state.tasks[i]; } }
+    return null;
+  }
+  function findHabit(id) {
+    for (var i = 0; i < state.habits.length; i++) { if (state.habits[i].id === id) { return state.habits[i]; } }
+    return null;
+  }
+
+  /* ---------- day stats ---------- */
+  function dayStats() {
+    var t = todayKey();
+    var total = 0, done = 0;
+    for (var i = 0; i < state.tasks.length; i++) {
+      total++;
+      if (state.tasks[i].done) { done++; }
+    }
+    for (var j = 0; j < state.habits.length; j++) {
+      total++;
+      if (state.habits[j].history[t]) { done++; }
+    }
+    return { total: total, done: done };
+  }
+
+  /* ==================================================================
+     DAY ROLLOVER  (clear finished tasks, keep unfinished)
+     ================================================================== */
+  function rollover(force) {
+    var t = todayKey();
+    if (!force && state.lastOpenDate === t) { return false; }
+    var kept = [];
+    for (var i = 0; i < state.tasks.length; i++) {
+      if (!state.tasks[i].done) { kept.push(state.tasks[i]); }
+    }
+    state.tasks = kept;
+    // streak break: if last active day was before yesterday, streak resets next completion naturally
+    state.lastOpenDate = t;
+    save();
+    return true;
+  }
+
+  /* ==================================================================
+     RENDERING
+     ================================================================== */
+  function trim(s) { return ("" + s).replace(/^\s+|\s+$/g, ""); }
+  function esc(s) {
+    return ("" + s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  var PRAISE = ["Nice!", "Boom.", "Done!", "Crushed it.", "Keep going!", "Yes!", "On fire.", "Great.", "That's the way.", "Progress!"];
+  function randomPraise() { return PRAISE[Math.floor(Math.random() * PRAISE.length)]; }
+
+  function dayPraise(done, total) {
+    if (total === 0) { return state.note ? esc(state.note) : "Add your first task and let's get rolling."; }
+    var pct = done / total;
+    if (pct >= 1) { return "Perfect day complete. You did everything!"; }
+    if (pct >= 0.75) { return "So close \u2014 finish strong!"; }
+    if (pct >= 0.5) { return "Halfway there. Momentum is real."; }
+    if (pct > 0) { return "Good start. One at a time."; }
+    return state.note ? esc(state.note) : "A fresh page. Pick one and begin.";
+  }
+
+  function renderHeader() {
+    $("lvlNum").innerHTML = state.level;
+    $("streakNum").innerHTML = state.streak;
+    var stats = dayStats();
+    $("doneNum").innerHTML = stats.done;
+    var p = currentLevelProgress();
+    $("xpFill").style.width = p.pct + "%";
+    $("xpLabel").innerHTML = p.into + " / " + p.need + " XP to level " + (state.level + 1);
+
+    var now = new Date();
+    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    $("datehead").innerHTML = days[now.getDay()] + "<br>" + months[now.getMonth()] + " " + now.getDate();
+  }
+
+  function renderTasks() {
+    var ul = $("taskList");
+    ul.innerHTML = "";
+    // sort: unfinished first, then by priority hi>normal>low
+    var order = { high: 0, normal: 1, low: 2 };
+    var arr = state.tasks.slice(0);
+    arr.sort(function (a, b) {
+      if (a.done !== b.done) { return a.done ? 1 : -1; }
+      return (order[a.prio] || 1) - (order[b.prio] || 1);
+    });
+
+    if (arr.length === 0) {
+      $("taskEmpty").className = "empty";
+    } else {
+      $("taskEmpty").className = "empty hidden";
+    }
+
+    for (var i = 0; i < arr.length; i++) {
+      var t = arr[i];
+      var li = document.createElement("li");
+      li.className = "item" + (t.done ? " done" : "");
+
+      var flag = "";
+      if (t.prio === "high") { flag = '<span class="flag hi">TOP</span>'; }
+      else if (t.prio === "low") { flag = '<span class="flag">LATER</span>'; }
+
+      li.innerHTML =
+        '<button class="checkbtn' + (t.done ? " on" : "") + '" data-act="togtask" data-id="' + t.id + '">' +
+          (t.done ? "\u2713" : "&nbsp;") +
+        '</button>' +
+        '<div class="itembody">' +
+          '<span class="itemtext' + (t.done ? " strike" : "") + '">' + flag + esc(t.text) + '</span>' +
+          '<button class="delbtn" data-act="deltask" data-id="' + t.id + '">\u00d7</button>' +
+        '</div>';
+      ul.appendChild(li);
+    }
+    renderDayProgress();
+  }
+
+  function renderDayProgress() {
+    var stats = dayStats();
+    var pct = stats.total === 0 ? 0 : Math.round((stats.done / stats.total) * 100);
+    $("dayFill").style.width = pct + "%";
+    $("dayLabel").innerHTML = "Today: " + stats.done + " of " + stats.total + " done (" + pct + "%)";
+    $("praise").innerHTML = dayPraise(stats.done, stats.total);
+  }
+
+  function last7Keys() {
+    var keys = [];
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date();
+      d.setDate(d.getDate() - i);
+      keys.push({ key: todayKey(d), letter: ["S", "M", "T", "W", "T", "F", "S"][d.getDay()] });
+    }
+    return keys;
+  }
+
+  function renderHabits() {
+    var ul = $("habitList");
+    ul.innerHTML = "";
+    if (state.habits.length === 0) {
+      $("habitEmpty").className = "empty";
+    } else {
+      $("habitEmpty").className = "empty hidden";
+    }
+    var t = todayKey();
+    var week = last7Keys();
+
+    for (var i = 0; i < state.habits.length; i++) {
+      var h = state.habits[i];
+      var doneToday = !!h.history[t];
+
+      var wk = '<div class="weekrow">';
+      for (var w = 0; w < week.length; w++) {
+        var isToday = (week[w].key === t);
+        var on = !!h.history[week[w].key];
+        wk += '<span class="wk' + (on ? " fill" : "") + (isToday ? " today" : "") + '">' + week[w].letter + '</span>';
+      }
+      wk += '</div>';
+
+      var li = document.createElement("li");
+      li.className = "item" + (doneToday ? " done" : "");
+      li.innerHTML =
+        '<button class="checkbtn' + (doneToday ? " on" : "") + '" data-act="toghabit" data-id="' + h.id + '">' +
+          (doneToday ? "\u2713" : "&nbsp;") +
+        '</button>' +
+        '<div class="itembody">' +
+          '<span class="itemtext' + (doneToday ? " strike" : "") + '">' + esc(h.text) + '</span>' +
+          wk +
+          '<button class="delbtn" data-act="delhabit" data-id="' + h.id + '">\u00d7</button>' +
+        '</div>';
+      ul.appendChild(li);
+    }
+  }
+
+  function renderGarden() {
+    var tree = treeForLevel(state.level);
+    $("treeArt").innerHTML = tree.art;
+    $("treeStage").innerHTML = "Level " + state.level + " \u2014 " + tree.name;
+    var nxt = nextTreeStage(state.level);
+    if (nxt) {
+      $("treeNext").innerHTML = "Reach level " + nxt.min + " to grow into " + nxt.name.toLowerCase() + ".";
+    } else {
+      $("treeNext").innerHTML = "You've reached the final form. Legendary.";
+    }
+
+    $("sTasks").innerHTML = state.totals.tasksDone;
+    $("sHabits").innerHTML = state.totals.habitsDone;
+    $("sBest").innerHTML = state.bestStreak;
+    $("sPerfect").innerHTML = state.totals.perfectDays;
+
+    var box = $("achList");
+    box.innerHTML = "";
+    for (var i = 0; i < ACHS.length; i++) {
+      var a = ACHS[i];
+      var got = !!state.achievements[a.id];
+      var div = document.createElement("div");
+      div.className = "ach" + (got ? "" : " locked");
+      div.innerHTML =
+        '<span class="seal">' + (got ? "UNLOCKED" : "LOCKED") + '</span>' +
+        '<div class="name">' + esc(a.name) + '</div>' +
+        '<div class="tiny">' + esc(a.desc) + '</div>';
+      box.appendChild(div);
+    }
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderTasks();
+    renderHabits();
+    renderGarden();
+    $("noteInput").value = state.note || "";
+    refreshExportBox();
+  }
+
+  function refreshExportBox() {
+    var box = $("exportBox");
+    if (box) {
+      try { box.value = JSON.stringify(state); } catch (e) { box.value = ""; }
+    }
+  }
+
+  /* ==================================================================
+     NAVIGATION
+     ================================================================== */
+  function switchView(name) {
+    var views = ["today", "habits", "garden", "menu"];
+    for (var i = 0; i < views.length; i++) {
+      $("view-" + views[i]).className = "wrap view" + (views[i] === name ? "" : " hidden");
+    }
+    var tabs = document.getElementsByClassName("tab");
+    for (var j = 0; j < tabs.length; j++) {
+      var v = tabs[j].getAttribute("data-view");
+      tabs[j].className = "tab" + (v === name ? " active" : "");
+    }
+    if (name === "garden") { renderGarden(); }
+    window.scrollTo(0, 0);
+  }
+
+  /* ==================================================================
+     EVENT WIRING (delegation for list items)
+     ================================================================== */
+  function wire() {
+    // nav tabs
+    var tabs = document.getElementsByClassName("tab");
+    for (var i = 0; i < tabs.length; i++) {
+      (function (tab) {
+        on(tab, "click", function () { switchView(tab.getAttribute("data-view")); });
+      })(tabs[i]);
+    }
+
+    // priority picker
+    var pbtns = document.getElementsByClassName("pbtn");
+    for (var p = 0; p < pbtns.length; p++) {
+      (function (btn) {
+        on(btn, "click", function () {
+          pendingPrio = btn.getAttribute("data-prio");
+          var all = document.getElementsByClassName("pbtn");
+          for (var k = 0; k < all.length; k++) {
+            all[k].className = "pbtn" + (all[k] === btn ? " sel" : "");
+          }
+        });
+      })(pbtns[p]);
+    }
+
+    on($("addTaskBtn"), "click", addTask);
+    on($("taskInput"), "keydown", function (e) { if (e.keyCode === 13) { addTask(); } });
+    on($("addHabitBtn"), "click", addHabit);
+    on($("habitInput"), "keydown", function (e) { if (e.keyCode === 13) { addHabit(); } });
+
+    // delegated clicks for task/habit buttons
+    on(document.body, "click", function (e) {
+      var el = e.target || e.srcElement;
+      var act = null, id = null, guard = 0;
+      while (el && guard < 5) {
+        if (el.getAttribute) {
+          act = el.getAttribute("data-act");
+          if (act) { id = el.getAttribute("data-id"); break; }
+        }
+        el = el.parentNode; guard++;
+      }
+      if (!act) { return; }
+      if (act === "togtask") { toggleTask(id); }
+      else if (act === "deltask") { deleteTask(id); }
+      else if (act === "toghabit") { toggleHabit(id); }
+      else if (act === "delhabit") { deleteHabit(id); }
+    });
+
+    // modal
+    on($("modalOk"), "click", closeModal);
+    on($("mask"), "click", closeModal);
+
+    // menu actions
+    on($("rolloverBtn"), "click", function () {
+      rollover(true);
+      renderAll();
+      toast("Day reset", "Finished tasks cleared.");
+    });
+    on($("noteInput"), "keydown", function (e) {
+      if (e.keyCode === 13) { saveNote(); }
+    });
+    on($("noteInput"), "blur", saveNote);
+    on($("resetBtn"), "click", function () {
+      if (window.confirm("Erase ALL data and start over? This cannot be undone.")) {
+        state = freshState();
+        save();
+        renderAll();
+        switchView("today");
+        toast("Reset done", "Fresh start.");
+      }
+    });
+    on($("importBtn"), "click", function () {
+      var raw = window.prompt("Paste your backup text to restore:", "");
+      if (!raw) { return; }
+      try {
+        var obj = JSON.parse(raw);
+        if (obj && obj.version) {
+          state = obj;
+          save();
+          renderAll();
+          toast("Restored", "Welcome back!");
+        } else {
+          window.alert("That doesn't look like valid Plannr data.");
+        }
+      } catch (e) {
+        window.alert("Could not read that text.");
+      }
+    });
+  }
+
+  function saveNote() {
+    state.note = trim($("noteInput").value);
+    save();
+    renderDayProgress();
+  }
+
+  /* ==================================================================
+     BOOT
+     ================================================================== */
+  rollover(false);
+  // reflect saved priority selection default
+  wire();
+  renderAll();
+  switchView("today");
+
+  // recheck date every minute in case the device sits open past midnight
+  window.setInterval(function () {
+    if (rollover(false)) { renderAll(); }
+    renderHeader();
+  }, 60000);
+
+})();
+</script>
+</body>
+</html>
