@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#111111">
+    <meta name="description" content="A dopamine-friendly life planner for small daily wins.">
+    <title>Plannr</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to planner</a>
+
+    <header class="app-header" role="banner">
+      <div>
+        <p class="eyebrow">Today's life quest</p>
+        <h1>Plannr</h1>
+      </div>
+      <button class="ghost-button" id="reset-day" type="button">New day</button>
+    </header>
+
+    <main id="main" class="app-shell" tabindex="-1">
+      <section class="hero-card" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="pill" id="date-label">Today</p>
+          <h2 id="hero-title">Make boring things feel like wins.</h2>
+          <p id="motivation-line">
+            Pick one tiny quest, cash in the dopamine, then keep the streak alive.
+          </p>
+        </div>
+        <div class="level-badge" aria-label="Planner level">
+          <span>Level</span>
+          <strong id="level-value">1</strong>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="Progress summary">
+        <article class="stat-card">
+          <span>XP</span>
+          <strong id="xp-value">0</strong>
+          <small id="next-level-label">20 until level 2</small>
+        </article>
+        <article class="stat-card">
+          <span>Streak</span>
+          <strong id="streak-value">0</strong>
+          <small>days showing up</small>
+        </article>
+        <article class="stat-card">
+          <span>Wins</span>
+          <strong id="wins-value">0</strong>
+          <small>completed today</small>
+        </article>
+      </section>
+
+      <section class="panel" aria-labelledby="quick-add-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Add a quest</p>
+            <h2 id="quick-add-title">What needs doing?</h2>
+          </div>
+          <button class="small-button" id="surprise-task" type="button">Prompt me</button>
+        </div>
+
+        <form id="task-form" class="task-form">
+          <label for="task-title">Task</label>
+          <input
+            id="task-title"
+            name="title"
+            type="text"
+            autocomplete="off"
+            maxlength="80"
+            placeholder="e.g. Fold laundry for 5 minutes"
+            required>
+
+          <div class="form-row">
+            <label>
+              Life area
+              <select id="task-area" name="area">
+                <option value="Home">Home</option>
+                <option value="Body">Body</option>
+                <option value="Mind">Mind</option>
+                <option value="Money">Money</option>
+                <option value="People">People</option>
+                <option value="Future">Future</option>
+              </select>
+            </label>
+            <label>
+              Energy
+              <select id="task-energy" name="energy">
+                <option value="Tiny">Tiny</option>
+                <option value="Medium">Medium</option>
+                <option value="Boss">Boss</option>
+              </select>
+            </label>
+          </div>
+
+          <button class="primary-button" type="submit">Add to today's quest board</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="quest-board-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Quest board</p>
+            <h2 id="quest-board-title">Today's tasks</h2>
+          </div>
+          <button class="small-button" id="clear-done" type="button">Clear wins</button>
+        </div>
+
+        <div class="focus-card" id="focus-card" hidden>
+          <p class="eyebrow">Next best move</p>
+          <strong id="focus-title"></strong>
+          <small id="focus-detail"></small>
+        </div>
+
+        <ul id="task-list" class="task-list" aria-live="polite"></ul>
+
+        <div id="empty-state" class="empty-state">
+          <strong>Your board is clear.</strong>
+          <p>Add one tiny thing. The first win is the ignition switch.</p>
+        </div>
+      </section>
+
+      <section class="panel ritual-panel" aria-labelledby="ritual-title">
+        <div>
+          <p class="eyebrow">Rituals</p>
+          <h2 id="ritual-title">Bookend the day</h2>
+        </div>
+        <div class="ritual-grid">
+          <button class="ritual-card" data-ritual="morning" type="button">
+            <span>Morning launch</span>
+            <strong id="morning-status">Not done</strong>
+            <small>Water, light, choose the first quest.</small>
+          </button>
+          <button class="ritual-card" data-ritual="evening" type="button">
+            <span>Evening save</span>
+            <strong id="evening-status">Not done</strong>
+            <small>Close loops, celebrate one win, park tomorrow.</small>
+          </button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="reward-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Reward jar</p>
+            <h2 id="reward-title">Name the treat</h2>
+          </div>
+          <span class="reward-meter" id="reward-meter">0/100</span>
+        </div>
+        <label for="reward-input">When I reach 100 XP, I get...</label>
+        <div class="reward-row">
+          <input id="reward-input" type="text" maxlength="70" placeholder="a guilt-free tea break">
+          <button class="small-button" id="save-reward" type="button">Save</button>
+        </div>
+        <p class="reward-note" id="reward-note">Give the brain a visible finish line.</p>
+      </section>
+
+      <section class="toast" id="toast" role="status" aria-live="polite" hidden></section>
+    </main>
+
+    <template id="task-template">
+      <li class="task-item">
+        <button class="complete-toggle" type="button" aria-label="Complete task"></button>
+        <div class="task-copy">
+          <strong></strong>
+          <span></span>
+        </div>
+        <span class="task-points"></span>
+        <button class="delete-task" type="button" aria-label="Delete task">x</button>
+      </li>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
