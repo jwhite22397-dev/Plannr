@@ -4,8 +4,9 @@ A dopamine-powered life planner built for your old Kindle. Turn mundane to-dos i
 
 ## Features
 
-- **Today's Plan** — Morning, afternoon, and evening time blocks so you know what to do when
-- **Task lists** — Categorized tasks (Life, Work, Health, Home) with priority-based XP rewards
+- **Today's Plan** — Morning, afternoon, and evening time blocks for today only
+- **Plan Ahead** — Daily, weekly, monthly, quarterly, and yearly planning with period navigation
+- **Goals** — Monthly, quarterly, and yearly goals with milestones, progress bars, and linked tasks
 - **Daily habits** — Build streaks and earn bonus XP for consistency
 - **Gamification** — Levels, titles, achievements, confetti celebrations, and motivational nudges
 - **Offline-first PWA** — Works without internet after first load; data stays on your device

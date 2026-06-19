@@ -94,8 +94,54 @@
         </button>
       </section>
 
-      <!-- Tasks View -->
-      <section class="view" id="view-tasks" data-view="tasks">
+      <!-- Plan View -->
+      <section class="view" id="view-plan" data-view="plan">
+        <h2 class="section-title">Plan Ahead</h2>
+        <p class="section-sub">Schedule tasks by day, week, month, quarter, or year.</p>
+
+        <div class="filter-tabs horizon-tabs" id="horizon-tabs">
+          <button class="tab active" data-horizon="daily">Day</button>
+          <button class="tab" data-horizon="weekly">Week</button>
+          <button class="tab" data-horizon="monthly">Month</button>
+          <button class="tab" data-horizon="quarterly">Quarter</button>
+          <button class="tab" data-horizon="yearly">Year</button>
+        </div>
+
+        <div class="period-nav">
+          <button class="period-btn" id="period-prev" aria-label="Previous period">‹</button>
+          <div class="period-label-wrap">
+            <span class="period-label" id="period-label">This Week</span>
+            <button class="period-jump hidden" id="period-jump">Jump to now</button>
+          </div>
+          <button class="period-btn" id="period-next" aria-label="Next period">›</button>
+        </div>
+
+        <ul class="task-list" id="plan-task-list"></ul>
+        <button class="btn btn-add" id="add-task-plan">
+          <span class="btn-icon">+</span> Add to this period
+        </button>
+      </section>
+
+      <!-- Goals View -->
+      <section class="view" id="view-goals" data-view="goals">
+        <h2 class="section-title">Goals</h2>
+        <p class="section-sub">Big targets with milestones. Link tasks to track progress.</p>
+
+        <div class="filter-tabs" id="goal-horizon-tabs">
+          <button class="tab active" data-goal-horizon="all">All</button>
+          <button class="tab" data-goal-horizon="monthly">Monthly</button>
+          <button class="tab" data-goal-horizon="quarterly">Quarterly</button>
+          <button class="tab" data-goal-horizon="yearly">Yearly</button>
+        </div>
+
+        <ul class="goal-list" id="goal-list"></ul>
+        <button class="btn btn-add" id="add-goal">
+          <span class="btn-icon">+</span> New goal
+        </button>
+      </section>
+
+      <!-- Tasks View (all tasks) -->
+      <section class="view hidden" id="view-tasks" data-view="tasks">
         <h2 class="section-title">All Tasks</h2>
         <div class="filter-tabs" id="category-tabs">
           <button class="tab active" data-category="all">All</button>
@@ -148,9 +194,13 @@
         <span class="nav-icon">☀️</span>
         <span class="nav-label">Today</span>
       </button>
-      <button class="nav-btn" data-nav="tasks" aria-label="Tasks">
-        <span class="nav-icon">✓</span>
-        <span class="nav-label">Tasks</span>
+      <button class="nav-btn" data-nav="plan" aria-label="Plan">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Plan</span>
+      </button>
+      <button class="nav-btn" data-nav="goals" aria-label="Goals">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Goals</span>
       </button>
       <button class="nav-btn" data-nav="habits" aria-label="Habits">
         <span class="nav-icon">🔄</span>
@@ -173,6 +223,29 @@
 
           <label class="field-label" for="modal-text">What needs doing?</label>
           <input type="text" id="modal-text" class="field-input" placeholder="e.g. Take out recycling" required autocomplete="off">
+
+          <label class="field-label" for="modal-horizon">Planning horizon</label>
+          <select id="modal-horizon" class="field-input">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+
+          <label class="field-label" for="modal-target-date" id="modal-target-label">Date</label>
+          <input type="date" id="modal-target-date" class="field-input">
+
+          <label class="field-label" for="modal-goal-link">Link to goal (optional)</label>
+          <select id="modal-goal-link" class="field-input">
+            <option value="">None</option>
+          </select>
+
+          <label class="field-label" for="modal-notes" id="modal-notes-label">Notes (optional)</label>
+          <textarea id="modal-notes" class="field-input field-textarea" rows="2" placeholder="Why this matters to you..."></textarea>
+
+          <label class="field-label" for="modal-milestones" id="modal-milestones-label">Milestones (one per line)</label>
+          <textarea id="modal-milestones" class="field-input field-textarea" rows="3" placeholder="Step 1&#10;Step 2&#10;Step 3"></textarea>
 
           <label class="field-label" for="modal-category">Category</label>
           <select id="modal-category" class="field-input">
@@ -207,6 +280,7 @@
     </div>
   </div>
 
+  <script src="js/planning.js"></script>
   <script src="js/gamification.js"></script>
   <script src="js/store.js"></script>
   <script src="js/app.js"></script>

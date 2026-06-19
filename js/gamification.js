@@ -4,6 +4,7 @@
 var Gamification = (function () {
   var XP_TABLE = { low: 5, medium: 10, high: 20 };
   var HABIT_XP = 15;
+  var GOAL_XP = 50;
 
   var LEVEL_TITLES = [
     'Fresh Start',
@@ -45,7 +46,13 @@ var Gamification = (function () {
     { id: 'level_10', icon: '🏆', name: 'Level 10', desc: 'Reach level 10', check: function (s) { return s.stats.level >= 10; } },
     { id: 'perfect_day', icon: '💯', name: 'Perfect Day', desc: 'Complete all tasks in a day', check: function (s) { return s.stats.perfectDays >= 1; } },
     { id: 'habit_streak_7', icon: '🔄', name: 'Habit Machine', desc: '7-day habit streak', check: function (s) { return s.habits.some(function (h) { return h.streak >= 7; }); } },
-    { id: 'xp_500', icon: '⚡', name: 'XP Hunter', desc: 'Earn 500 total XP', check: function (s) { return s.stats.totalXp >= 500; } }
+    { id: 'xp_500', icon: '⚡', name: 'XP Hunter', desc: 'Earn 500 total XP', check: function (s) { return s.stats.totalXp >= 500; } },
+    { id: 'first_goal', icon: '🎯', name: 'Dreamer', desc: 'Set your first goal', check: function (s) { return s.goals && s.goals.length >= 1; } },
+    { id: 'goal_done', icon: '🏁', name: 'Goal Getter', desc: 'Complete a goal', check: function (s) { return (s.stats.goalsCompleted || 0) >= 1; } },
+    { id: 'plan_ahead', icon: '📆', name: 'Future You', desc: 'Plan something for next week', check: function (s) {
+      var next = Planning.shiftPeriod('weekly', Planning.periodKey('weekly', new Date()), 1);
+      return s.tasks.some(function (t) { return Planning.isInPeriod(t, 'weekly', next); });
+    } }
   ];
 
   function xpForLevel(level) {
@@ -211,6 +218,7 @@ var Gamification = (function () {
   return {
     XP_TABLE: XP_TABLE,
     HABIT_XP: HABIT_XP,
+    GOAL_XP: GOAL_XP,
     ACHIEVEMENTS: ACHIEVEMENTS,
     xpForLevel: xpForLevel,
     getLevel: getLevel,

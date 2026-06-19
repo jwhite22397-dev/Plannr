@@ -7,11 +7,13 @@ var Store = (function () {
   var DEFAULT = {
     tasks: [],
     habits: [],
+    goals: [],
     stats: {
       totalXp: 0,
       xpToday: 0,
       xpTodayDate: '',
       totalCompleted: 0,
+      goalsCompleted: 0,
       streak: 0,
       bestStreak: 0,
       lastActiveDate: '',
@@ -33,14 +35,25 @@ var Store = (function () {
 
   function mergeDefaults(data) {
     var result = clone(DEFAULT);
-    if (data.tasks) result.tasks = data.tasks;
+    if (data.tasks) result.tasks = migrateTasks(data.tasks);
     if (data.habits) result.habits = data.habits;
+    if (data.goals) result.goals = data.goals;
     if (data.stats) {
       for (var k in DEFAULT.stats) {
         if (data.stats[k] !== undefined) result.stats[k] = data.stats[k];
       }
     }
     return result;
+  }
+
+  function migrateTasks(tasks) {
+    var today = Planning.todayKey();
+    return tasks.map(function (t) {
+      if (!t.horizon) t.horizon = 'daily';
+      if (!t.targetDate) t.targetDate = today;
+      if (t.goalId === undefined) t.goalId = null;
+      return t;
+    });
   }
 
   function save(data) {
@@ -74,22 +87,32 @@ var Store = (function () {
     task.createdAt = Date.now();
     task.completed = false;
     task.completedAt = null;
+    if (!task.horizon) task.horizon = 'daily';
+    if (!task.targetDate) task.targetDate = Planning.todayKey();
+    if (task.goalId === undefined) task.goalId = null;
     data.tasks.push(task);
     save(data);
+    syncGoalProgress(data, task.goalId);
     return task;
   }
 
   function updateTask(data, id, updates) {
     var task = data.tasks.find(function (t) { return t.id === id; });
     if (!task) return null;
+    var oldGoalId = task.goalId;
     for (var k in updates) task[k] = updates[k];
     save(data);
+    syncGoalProgress(data, oldGoalId);
+    syncGoalProgress(data, task.goalId);
     return task;
   }
 
   function deleteTask(data, id) {
+    var task = data.tasks.find(function (t) { return t.id === id; });
+    var goalId = task ? task.goalId : null;
     data.tasks = data.tasks.filter(function (t) { return t.id !== id; });
     save(data);
+    syncGoalProgress(data, goalId);
   }
 
   function completeTask(data, id) {
@@ -100,6 +123,10 @@ var Store = (function () {
     task.completedAt = Date.now();
 
     var xp = Gamification.XP_TABLE[task.priority] || 10;
+    if (task.horizon && task.horizon !== 'daily') {
+      xp = Math.round(xp * 1.5);
+    }
+
     data.stats = resetXpToday(data.stats);
     data.stats.totalXp += xp;
     data.stats.xpToday += xp;
@@ -111,6 +138,7 @@ var Store = (function () {
     data.stats.level = lvl.level;
 
     save(data);
+    syncGoalProgress(data, task.goalId);
     return { task: task, xp: xp, leveledUp: leveledUp, level: lvl };
   }
 
@@ -122,6 +150,10 @@ var Store = (function () {
     task.completedAt = null;
 
     var xp = Gamification.XP_TABLE[task.priority] || 10;
+    if (task.horizon && task.horizon !== 'daily') {
+      xp = Math.round(xp * 1.5);
+    }
+
     data.stats.totalXp = Math.max(0, data.stats.totalXp - xp);
     data.stats = resetXpToday(data.stats);
     data.stats.xpToday = Math.max(0, data.stats.xpToday - xp);
@@ -131,7 +163,138 @@ var Store = (function () {
     data.stats.level = lvl.level;
 
     save(data);
+    syncGoalProgress(data, task.goalId);
     return task;
+  }
+
+  function getTasksForPeriod(data, horizon, periodKeyVal) {
+    return data.tasks.filter(function (t) {
+      return Planning.isInPeriod(t, horizon, periodKeyVal);
+    }).sort(function (a, b) {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+  }
+
+  /* Goals */
+  function addGoal(data, goal) {
+    goal.id = uid();
+    goal.createdAt = Date.now();
+    goal.completed = false;
+    goal.completedAt = null;
+    goal.milestones = goal.milestones || [];
+    goal.progress = goal.progress || 0;
+    if (!goal.horizon) goal.horizon = 'yearly';
+    if (!goal.targetDate) {
+      goal.targetDate = Planning.defaultTargetDate(goal.horizon, Planning.periodKey(goal.horizon, new Date()));
+    }
+    data.goals.push(goal);
+    save(data);
+    return goal;
+  }
+
+  function updateGoal(data, id, updates) {
+    var goal = data.goals.find(function (g) { return g.id === id; });
+    if (!goal) return null;
+    for (var k in updates) goal[k] = updates[k];
+    save(data);
+    return goal;
+  }
+
+  function deleteGoal(data, id) {
+    data.tasks.forEach(function (t) {
+      if (t.goalId === id) t.goalId = null;
+    });
+    data.goals = data.goals.filter(function (g) { return g.id !== id; });
+    save(data);
+  }
+
+  function toggleMilestone(data, goalId, milestoneId) {
+    var goal = data.goals.find(function (g) { return g.id === goalId; });
+    if (!goal || !goal.milestones) return null;
+
+    var ms = goal.milestones.find(function (m) { return m.id === milestoneId; });
+    if (!ms) return null;
+
+    ms.done = !ms.done;
+    recomputeGoalProgress(data, goal);
+    save(data);
+
+    if (goal.progress >= 100 && !goal.completed) {
+      return completeGoal(data, goalId);
+    }
+    return { goal: goal, xp: 0, justCompleted: false };
+  }
+
+  function completeGoal(data, id) {
+    var goal = data.goals.find(function (g) { return g.id === id; });
+    if (!goal || goal.completed) return null;
+
+    goal.completed = true;
+    goal.completedAt = Date.now();
+    goal.progress = 100;
+    if (goal.milestones) {
+      goal.milestones.forEach(function (m) { m.done = true; });
+    }
+
+    var xp = Gamification.GOAL_XP;
+    data.stats = resetXpToday(data.stats);
+    data.stats.totalXp += xp;
+    data.stats.xpToday += xp;
+    data.stats.goalsCompleted = (data.stats.goalsCompleted || 0) + 1;
+    data.stats = Gamification.updateStreak(data.stats);
+
+    var lvl = Gamification.getLevel(data.stats.totalXp);
+    var leveledUp = lvl.level > data.stats.level;
+    data.stats.level = lvl.level;
+
+    save(data);
+    return { goal: goal, xp: xp, leveledUp: leveledUp, level: lvl };
+  }
+
+  function syncGoalProgress(data, goalId) {
+    if (!goalId) return;
+    var goal = data.goals.find(function (g) { return g.id === goalId; });
+    if (!goal) return;
+    recomputeGoalProgress(data, goal);
+    save(data);
+  }
+
+  function recomputeGoalProgress(data, goal) {
+    var linked = data.tasks.filter(function (t) { return t.goalId === goal.id; });
+    var msDone = 0;
+    var msTotal = 0;
+    if (goal.milestones && goal.milestones.length) {
+      msTotal = goal.milestones.length;
+      msDone = goal.milestones.filter(function (m) { return m.done; }).length;
+    }
+    var taskDone = linked.filter(function (t) { return t.completed; }).length;
+    var taskTotal = linked.length;
+
+    if (msTotal > 0 && taskTotal > 0) {
+      goal.progress = Math.round(((msDone / msTotal) * 0.5 + (taskDone / taskTotal) * 0.5) * 100);
+    } else if (msTotal > 0) {
+      goal.progress = Math.round((msDone / msTotal) * 100);
+    } else if (taskTotal > 0) {
+      goal.progress = Math.round((taskDone / taskTotal) * 100);
+    }
+
+    if (goal.progress >= 100 && !goal.completed) {
+      goal.progress = 100;
+    }
+  }
+
+  function getGoalsForHorizon(data, horizon) {
+    return data.goals.filter(function (g) {
+      return !g.completed && g.horizon === horizon;
+    }).sort(function (a, b) {
+      return (a.targetDate || '').localeCompare(b.targetDate || '');
+    });
+  }
+
+  function getActiveGoals(data) {
+    return data.goals.filter(function (g) { return !g.completed; })
+      .sort(function (a, b) { return (a.targetDate || '').localeCompare(b.targetDate || ''); });
   }
 
   /* Habits */
@@ -215,10 +378,8 @@ var Store = (function () {
   }
 
   function checkPerfectDay(data) {
-    var today = Gamification.todayKey();
-    var todayTasks = data.tasks.filter(function (t) {
-      return !t.completedAt || isSameDay(t.completedAt, today);
-    });
+    var today = Planning.todayKey();
+    var todayTasks = getTodayTasks(data);
     var incomplete = todayTasks.filter(function (t) { return !t.completed; });
     if (todayTasks.length > 0 && incomplete.length === 0) {
       data.stats.perfectDays = (data.stats.perfectDays || 0) + 1;
@@ -235,12 +396,18 @@ var Store = (function () {
   }
 
   function getTodayTasks(data) {
-    return data.tasks.filter(function (t) { return !t.completed || isToday(t); });
+    var today = Planning.todayKey();
+    return data.tasks.filter(function (t) {
+      var horizon = t.horizon || 'daily';
+      if (horizon !== 'daily') return false;
+      if (t.targetDate !== today) return false;
+      return !t.completed || isToday(t);
+    });
   }
 
   function isToday(task) {
     if (task.completed && task.completedAt) {
-      return isSameDay(task.completedAt, Gamification.todayKey());
+      return isSameDay(task.completedAt, Planning.todayKey());
     }
     return !task.completed;
   }
@@ -255,6 +422,15 @@ var Store = (function () {
     deleteTask: deleteTask,
     completeTask: completeTask,
     uncompleteTask: uncompleteTask,
+    getTasksForPeriod: getTasksForPeriod,
+    addGoal: addGoal,
+    updateGoal: updateGoal,
+    deleteGoal: deleteGoal,
+    toggleMilestone: toggleMilestone,
+    completeGoal: completeGoal,
+    getGoalsForHorizon: getGoalsForHorizon,
+    getActiveGoals: getActiveGoals,
+    recomputeGoalProgress: recomputeGoalProgress,
     addHabit: addHabit,
     deleteHabit: deleteHabit,
     toggleHabit: toggleHabit,
