@@ -29,3 +29,16 @@ Then open `http://localhost:8080`.
 
 You can also open `index.html` directly, though service-worker offline caching
 only works when served over HTTP(S).
+
+## Put it on a Kindle
+
+1. Host the folder with any static host, GitHub Pages, or a local computer on
+   the same Wi-Fi network.
+2. Open the hosted URL in the Kindle browser.
+3. Bookmark it, or add it to the home screen if your Kindle browser supports
+   that option.
+4. Load it once while online. Compatible browsers cache the app shell for later
+   offline use.
+
+All planner data stays on the device in browser storage. If you clear browser
+data, the planner resets.

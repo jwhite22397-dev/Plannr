@@ -73,12 +73,13 @@
   init();
 
   function init() {
+    refreshToday();
+
     if (!state.createdAt) {
       state.createdAt = today;
       saveState();
     }
 
-    els.dateLabel.textContent = formatToday();
     els.rewardInput.value = state.reward || "";
 
     els.taskForm.addEventListener("submit", onTaskSubmit);
@@ -169,6 +170,7 @@
 
   function addTask(input) {
     var title = trim(input.title);
+    refreshToday();
 
     if (!title) {
       showToast("Give the quest a name first.");
@@ -215,6 +217,7 @@
   function toggleTask(taskId) {
     var task = findTask(taskId);
     var line;
+    refreshToday();
 
     if (!task) {
       return;
@@ -275,6 +278,7 @@
   function clearCompletedTasks() {
     var remaining = [];
     var i;
+    refreshToday();
 
     for (i = 0; i < state.tasks.length; i += 1) {
       if (!state.tasks[i].done) {
@@ -291,6 +295,7 @@
   function startFreshDay() {
     var tomorrowTasks = [];
     var i;
+    refreshToday();
 
     for (i = 0; i < state.tasks.length; i += 1) {
       if (!state.tasks[i].done) {
@@ -333,6 +338,7 @@
   }
 
   function toggleRitual(name) {
+    refreshToday();
     ensureRitualDay();
     state.rituals[today][name] = !state.rituals[today][name];
 
@@ -358,10 +364,19 @@
   }
 
   function render() {
+    refreshToday();
     renderStats();
     renderTasks();
     renderRituals();
     renderReward();
+  }
+
+  function refreshToday() {
+    today = getTodayKey();
+
+    if (els.dateLabel) {
+      els.dateLabel.textContent = formatToday();
+    }
   }
 
   function renderStats() {
