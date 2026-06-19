@@ -8,6 +8,7 @@
   var currentHorizon = 'daily';
   var currentPeriodKey = Planning.periodKey('daily', new Date());
   var currentGoalHorizon = 'all';
+  var currentHeroTab = 'skins';
   var editingId = null;
   var editingType = 'task';
 
@@ -102,6 +103,27 @@
     document.getElementById('coach-save-settings').addEventListener('click', saveCoachSettings);
     document.getElementById('coach-analyze-plan').addEventListener('click', runPlanAnalysis);
     document.getElementById('coach-advise-task').addEventListener('click', runTaskAdvice);
+
+    document.getElementById('hero-avatar-btn').addEventListener('click', function () {
+      switchView('hero');
+    });
+    document.getElementById('hero-name-input').addEventListener('change', function () {
+      Store.setHeroName(data, this.value);
+      renderHeader();
+    });
+    document.querySelectorAll('#hero-tabs .tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        currentHeroTab = this.getAttribute('data-hero-tab');
+        document.querySelectorAll('#hero-tabs .tab').forEach(function (t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        document.querySelectorAll('.hero-panel').forEach(function (p) { p.classList.remove('active'); });
+        document.getElementById('hero-panel-' + currentHeroTab).classList.add('active');
+      });
+    });
+    document.getElementById('add-loot').addEventListener('click', function () { openModal('loot'); });
+    document.getElementById('unlock-dismiss').addEventListener('click', function () {
+      document.getElementById('unlock').classList.add('hidden');
+    });
   }
 
   function switchView(view) {
@@ -121,14 +143,16 @@
     renderGoals();
     renderTaskList();
     renderHabits();
-    renderRewards();
+    renderHero();
     renderCoach();
   }
 
   function renderHeader() {
     var lvl = Gamification.getLevel(data.stats.totalXp);
     var pct = lvl.xpNeeded > 0 ? (lvl.xpInLevel / lvl.xpNeeded) * 100 : 0;
+    var skin = RPG.getEquippedSkin(data);
 
+    document.getElementById('header-avatar').textContent = skin.icon;
     document.getElementById('streak-count').textContent = data.stats.streak || 0;
     document.getElementById('level-label').textContent = 'Lv. ' + lvl.level;
     document.getElementById('xp-label').textContent = lvl.xpInLevel + ' / ' + lvl.xpNeeded + ' XP';
@@ -420,7 +444,147 @@
     });
   }
 
-  function renderRewards() {
+  function renderHero() {
+    var skin = RPG.getEquippedSkin(data);
+    var heroClass = RPG.getClass(data.stats.level || 1);
+
+    document.getElementById('hero-portrait').textContent = skin.icon;
+    document.getElementById('hero-aura').className = 'hero-aura ' + skin.aura;
+    document.getElementById('hero-name-input').value = data.character.name;
+    document.getElementById('hero-class').textContent =
+      heroClass.icon + ' ' + heroClass.title + ' · Lv. ' + (data.stats.level || 1);
+    document.getElementById('wallet-xp').textContent = data.stats.walletXp || 0;
+
+    renderSkins();
+    renderLoot();
+    renderTrophies();
+  }
+
+  function renderSkins() {
+    var grid = document.getElementById('skins-grid');
+    grid.innerHTML = '';
+
+    RPG.SKINS.forEach(function (skin) {
+      var owned = RPG.isSkinOwned(data.character, skin.id);
+      var equipped = data.character.skinId === skin.id;
+      var canBuy = RPG.canBuySkin(data, skin.id);
+      var reqMet = RPG.checkRequirement(skin.requirement, data.stats);
+
+      var card = document.createElement('div');
+      card.className = 'skin-card' +
+        (owned ? ' owned' : '') +
+        (equipped ? ' equipped' : '') +
+        (!owned && !canBuy.ok && !reqMet ? ' locked' : '');
+
+      var badge = equipped ? '<span class="skin-badge">ON</span>' : (owned ? '<span class="skin-badge">OWNED</span>' : '');
+
+      card.innerHTML =
+        badge +
+        '<div class="skin-icon">' + skin.icon + '</div>' +
+        '<div class="skin-name">' + skin.name + '</div>' +
+        (owned
+          ? '<div class="skin-cost">' + (equipped ? 'Equipped' : 'Tap to equip') + '</div>'
+          : '<div class="skin-cost">' + skin.cost + ' XP</div>') +
+        (skin.requirement ? '<div class="skin-req">' + RPG.requirementLabel(skin.requirement) + '</div>' : '');
+
+      card.addEventListener('click', function () {
+        handleSkinClick(skin.id);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function handleSkinClick(skinId) {
+    if (RPG.isSkinOwned(data.character, skinId)) {
+      Store.equipSkin(data, skinId);
+      renderAll();
+      return;
+    }
+    var result = Store.buySkin(data, skinId);
+    if (!result.ok) {
+      alert(result.reason);
+      return;
+    }
+    showUnlock(result.skin);
+    renderAll();
+  }
+
+  function showUnlock(skin) {
+    document.getElementById('unlock-hero').textContent = skin.icon;
+    document.getElementById('unlock-title').textContent = 'New skin unlocked!';
+    document.getElementById('unlock-name').textContent = skin.name;
+    document.getElementById('unlock-desc').textContent = skin.desc;
+    document.getElementById('unlock').classList.remove('hidden');
+  }
+
+  function renderLoot() {
+    var list = document.getElementById('loot-list');
+    list.innerHTML = '';
+
+    if (!data.shopRewards.length) {
+      var empty = document.createElement('li');
+      empty.className = 'time-block-empty';
+      empty.textContent = 'Add treats like "Fancy coffee" or "1 hour of gaming" — set your own XP price!';
+      list.appendChild(empty);
+    } else {
+      data.shopRewards.forEach(function (reward) {
+        var li = document.createElement('li');
+        li.className = 'loot-item';
+        var canRedeem = RPG.canRedeemReward(data, reward);
+
+        li.innerHTML =
+          '<span class="loot-icon">' + (reward.icon || '🎁') + '</span>' +
+          '<div class="loot-body">' +
+            '<div class="loot-name">' + escapeHtml(reward.name) + '</div>' +
+            (reward.desc ? '<div class="loot-desc">' + escapeHtml(reward.desc) + '</div>' : '') +
+          '</div>' +
+          '<span class="loot-cost">' + reward.cost + ' XP</span>' +
+          '<button class="btn btn-primary loot-redeem" ' + (canRedeem.ok ? '' : 'disabled') + '>Redeem</button>';
+
+        li.querySelector('.loot-redeem').addEventListener('click', function (e) {
+          e.stopPropagation();
+          redeemLoot(reward.id);
+        });
+        li.addEventListener('click', function () {
+          openModal('loot', reward);
+        });
+        list.appendChild(li);
+      });
+    }
+
+    var history = document.getElementById('loot-history');
+    history.innerHTML = '';
+    var recent = (data.redemptions || []).slice().reverse().slice(0, 10);
+    if (!recent.length) {
+      var hEmpty = document.createElement('li');
+      hEmpty.className = 'loot-history-item';
+      hEmpty.textContent = 'No loot redeemed yet — earn it first!';
+      history.appendChild(hEmpty);
+    } else {
+      recent.forEach(function (r) {
+        var li = document.createElement('li');
+        li.className = 'loot-history-item';
+        var d = new Date(r.redeemedAt);
+        li.textContent = (r.icon || '🎁') + ' ' + r.name + ' (−' + r.cost + ' XP) · ' +
+          d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        history.appendChild(li);
+      });
+    }
+  }
+
+  function redeemLoot(id) {
+    var result = Store.redeemShopReward(data, id);
+    if (!result.ok) {
+      alert(result.reason);
+      return;
+    }
+    Gamification.showCelebration(0);
+    document.getElementById('celebration-text').textContent = 'Loot redeemed!';
+    document.getElementById('celebration-xp').textContent = '−' + result.reward.cost + ' XP';
+    renderAll();
+  }
+
+  function renderTrophies() {
     document.getElementById('total-xp').textContent = data.stats.totalXp || 0;
     document.getElementById('best-streak').textContent = data.stats.bestStreak || 0;
     document.getElementById('tasks-completed-total').textContent = data.stats.totalCompleted || 0;
@@ -437,6 +601,10 @@
         '<div class="achievement-desc">' + ach.desc + '</div>';
       grid.appendChild(div);
     });
+  }
+
+  function renderRewards() {
+    renderTrophies();
   }
 
   function handleCelebration(result) {
@@ -524,22 +692,37 @@
 
     var taskFields = ['modal-horizon', 'modal-target-date', 'modal-goal-link', 'modal-category', 'modal-priority', 'modal-timeblock'];
     var goalFields = ['modal-notes', 'modal-milestones'];
+    var lootFields = ['modal-loot-icon', 'modal-loot-cost'];
     var habitOnly = type === 'habit';
     var goalOnly = type === 'goal';
+    var lootOnly = type === 'loot';
 
     document.getElementById('modal-title').textContent =
       editingId
-        ? (goalOnly ? 'Edit Goal' : habitOnly ? 'Edit Habit' : 'Edit Task')
-        : (goalOnly ? 'New Goal' : habitOnly ? 'New Habit' : 'New Task');
+        ? (lootOnly ? 'Edit Reward' : goalOnly ? 'Edit Goal' : habitOnly ? 'Edit Habit' : 'Edit Task')
+        : (lootOnly ? 'New Loot Reward' : goalOnly ? 'New Goal' : habitOnly ? 'New Habit' : 'New Task');
+
+    document.querySelector('label[for="modal-text"]').textContent =
+      lootOnly ? 'Reward name' : 'What needs doing?';
 
     taskFields.forEach(function (fid) {
-      setFieldVisibility(fid, !goalOnly && !habitOnly);
+      setFieldVisibility(fid, !goalOnly && !habitOnly && !lootOnly);
     });
     goalFields.forEach(function (fid) {
       setFieldVisibility(fid, goalOnly);
     });
+    lootFields.forEach(function (fid) {
+      setFieldVisibility(fid, lootOnly);
+    });
 
-    if (!goalOnly && !habitOnly) {
+    if (lootOnly) {
+      setFieldVisibility('modal-notes', true);
+      document.getElementById('modal-notes-label').textContent = 'Description (optional)';
+      document.getElementById('modal-text').value = item ? item.name : '';
+      document.getElementById('modal-notes').value = item ? (item.desc || '') : '';
+      document.getElementById('modal-loot-icon').value = item ? (item.icon || '🎁') : '🎁';
+      document.getElementById('modal-loot-cost').value = item ? item.cost : 50;
+    } else if (!goalOnly && !habitOnly) {
       var horizon = item ? item.horizon : (defaults.horizon || 'daily');
       document.getElementById('modal-horizon').value = horizon;
       document.getElementById('modal-category').value = item ? item.category : 'life';
@@ -550,9 +733,7 @@
         : (defaults.targetDate || Planning.todayKey());
       populateGoalLinkSelect(item ? item.goalId : '');
       updateModalDateField();
-    }
-
-    if (goalOnly) {
+    } else if (goalOnly) {
       setFieldVisibility('modal-horizon', true);
       setFieldVisibility('modal-target-date', true);
       document.querySelector('label[for="modal-horizon"]').textContent = 'Goal timeframe';
@@ -572,7 +753,7 @@
       document.getElementById('modal-milestones').value = item && item.milestones
         ? item.milestones.map(function (m) { return m.text; }).join('\n')
         : '';
-    } else {
+    } else if (!lootOnly && !habitOnly) {
       document.getElementById('modal-horizon').innerHTML =
         '<option value="daily">Daily</option>' +
         '<option value="weekly">Weekly</option>' +
@@ -641,6 +822,25 @@
       } else {
         Store.addHabit(data, { text: text });
       }
+    } else if (editingType === 'loot') {
+      var lootPayload = {
+        name: text,
+        desc: document.getElementById('modal-notes').value.trim(),
+        icon: document.getElementById('modal-loot-icon').value.trim() || '🎁',
+        cost: parseInt(document.getElementById('modal-loot-cost').value, 10) || 50
+      };
+      if (editingId) {
+        var reward = data.shopRewards.find(function (r) { return r.id === editingId; });
+        if (reward) {
+          reward.name = lootPayload.name;
+          reward.desc = lootPayload.desc;
+          reward.icon = lootPayload.icon;
+          reward.cost = lootPayload.cost;
+          Store.save(data);
+        }
+      } else {
+        Store.addShopReward(data, lootPayload);
+      }
     } else if (editingType === 'goal') {
       var milestones = document.getElementById('modal-milestones').value
         .split('\n')
@@ -697,6 +897,7 @@
     if (!editingId) return;
     if (editingType === 'habit') Store.deleteHabit(data, editingId);
     else if (editingType === 'goal') Store.deleteGoal(data, editingId);
+    else if (editingType === 'loot') Store.deleteShopReward(data, editingId);
     else Store.deleteTask(data, editingId);
     closeModal();
     renderAll();

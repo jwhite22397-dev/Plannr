@@ -1,4 +1,4 @@
-var CACHE_NAME = 'plannr-v3';
+var CACHE_NAME = 'plannr-v4';
 var ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ var ASSETS = [
   './js/planning.js',
   './js/gamification.js',
   './js/store.js',
+  './js/rpg.js',
   './js/ai-coach.js',
   './js/app.js',
   './manifest.json',

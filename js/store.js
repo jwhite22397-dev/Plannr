@@ -8,8 +8,12 @@ var Store = (function () {
     tasks: [],
     habits: [],
     goals: [],
+    character: null,
+    shopRewards: [],
+    redemptions: [],
     stats: {
       totalXp: 0,
+      walletXp: 0,
       xpToday: 0,
       xpTodayDate: '',
       totalCompleted: 0,
@@ -38,12 +42,37 @@ var Store = (function () {
     if (data.tasks) result.tasks = migrateTasks(data.tasks);
     if (data.habits) result.habits = data.habits;
     if (data.goals) result.goals = data.goals;
+    if (data.shopRewards) result.shopRewards = data.shopRewards;
+    if (data.redemptions) result.redemptions = data.redemptions;
+    if (!data.shopRewards || data.shopRewards.length === 0) {
+      if (!data.tasks || data.tasks.length === 0) {
+        result.shopRewards = getStarterLoot();
+      } else {
+        result.shopRewards = [];
+      }
+    }
     if (data.stats) {
       for (var k in DEFAULT.stats) {
         if (data.stats[k] !== undefined) result.stats[k] = data.stats[k];
       }
+      if (data.stats.walletXp === undefined) {
+        result.stats.walletXp = data.stats.totalXp || 0;
+      }
     }
+    result.character = migrateCharacter(data.character);
     return result;
+  }
+
+  function migrateCharacter(character) {
+    var base = clone(RPG.DEFAULT_CHARACTER);
+    if (!character) return base;
+    base.name = character.name || base.name;
+    base.skinId = character.skinId || base.skinId;
+    base.unlockedSkins = character.unlockedSkins || base.unlockedSkins;
+    if (base.unlockedSkins.indexOf('default') === -1) {
+      base.unlockedSkins.unshift('default');
+    }
+    return base;
   }
 
   function migrateTasks(tasks) {
@@ -54,6 +83,14 @@ var Store = (function () {
       if (t.goalId === undefined) t.goalId = null;
       return t;
     });
+  }
+
+  function getStarterLoot() {
+    return [
+      { id: 'loot_tv', name: '30 min guilt-free screen time', icon: '📺', cost: 40, desc: 'Couch mode activated' },
+      { id: 'loot_coffee', name: 'Fancy coffee or treat', icon: '☕', cost: 75, desc: 'A small luxury you earned' },
+      { id: 'loot_game', name: '1 hour of gaming', icon: '🎮', cost: 120, desc: 'Play without the guilt' }
+    ];
   }
 
   function save(data) {
@@ -70,6 +107,24 @@ var Store = (function () {
 
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  }
+
+  function earnXp(data, amount) {
+    data.stats.totalXp += amount;
+    data.stats.walletXp = (data.stats.walletXp || 0) + amount;
+    data.stats = resetXpToday(data.stats);
+    data.stats.xpToday += amount;
+    var lvl = Gamification.getLevel(data.stats.totalXp);
+    var leveledUp = lvl.level > data.stats.level;
+    data.stats.level = lvl.level;
+    return { leveledUp: leveledUp, level: lvl };
+  }
+
+  function spendXp(data, amount) {
+    if ((data.stats.walletXp || 0) < amount) return false;
+    data.stats.walletXp -= amount;
+    save(data);
+    return true;
   }
 
   function resetXpToday(stats) {
@@ -127,19 +182,13 @@ var Store = (function () {
       xp = Math.round(xp * 1.5);
     }
 
-    data.stats = resetXpToday(data.stats);
-    data.stats.totalXp += xp;
-    data.stats.xpToday += xp;
     data.stats.totalCompleted += 1;
     data.stats = Gamification.updateStreak(data.stats);
-
-    var lvl = Gamification.getLevel(data.stats.totalXp);
-    var leveledUp = lvl.level > data.stats.level;
-    data.stats.level = lvl.level;
+    var xpResult = earnXp(data, xp);
 
     save(data);
     syncGoalProgress(data, task.goalId);
-    return { task: task, xp: xp, leveledUp: leveledUp, level: lvl };
+    return { task: task, xp: xp, leveledUp: xpResult.leveledUp, level: xpResult.level };
   }
 
   function uncompleteTask(data, id) {
@@ -155,6 +204,7 @@ var Store = (function () {
     }
 
     data.stats.totalXp = Math.max(0, data.stats.totalXp - xp);
+    data.stats.walletXp = Math.max(0, (data.stats.walletXp || 0) - xp);
     data.stats = resetXpToday(data.stats);
     data.stats.xpToday = Math.max(0, data.stats.xpToday - xp);
     data.stats.totalCompleted = Math.max(0, data.stats.totalCompleted - 1);
@@ -238,18 +288,12 @@ var Store = (function () {
     }
 
     var xp = Gamification.GOAL_XP;
-    data.stats = resetXpToday(data.stats);
-    data.stats.totalXp += xp;
-    data.stats.xpToday += xp;
     data.stats.goalsCompleted = (data.stats.goalsCompleted || 0) + 1;
     data.stats = Gamification.updateStreak(data.stats);
-
-    var lvl = Gamification.getLevel(data.stats.totalXp);
-    var leveledUp = lvl.level > data.stats.level;
-    data.stats.level = lvl.level;
+    var xpResult = earnXp(data, xp);
 
     save(data);
-    return { goal: goal, xp: xp, leveledUp: leveledUp, level: lvl };
+    return { goal: goal, xp: xp, leveledUp: xpResult.leveledUp, level: xpResult.level };
   }
 
   function syncGoalProgress(data, goalId) {
@@ -325,6 +369,7 @@ var Store = (function () {
     if (habit.completedToday) {
       habit.completedToday = false;
       data.stats.totalXp = Math.max(0, data.stats.totalXp - Gamification.HABIT_XP);
+      data.stats.walletXp = Math.max(0, (data.stats.walletXp || 0) - Gamification.HABIT_XP);
       data.stats = resetXpToday(data.stats);
       data.stats.xpToday = Math.max(0, data.stats.xpToday - Gamification.HABIT_XP);
     } else {
@@ -351,14 +396,10 @@ var Store = (function () {
       if (habit.streak >= 7) xp += 10;
       if (habit.streak >= 30) xp += 25;
 
-      data.stats = resetXpToday(data.stats);
-      data.stats.totalXp += xp;
-      data.stats.xpToday += xp;
       data.stats = Gamification.updateStreak(data.stats);
-
-      lvl = Gamification.getLevel(data.stats.totalXp);
-      leveledUp = lvl.level > data.stats.level;
-      data.stats.level = lvl.level;
+      var xpResult = earnXp(data, xp);
+      leveledUp = xpResult.leveledUp;
+      lvl = xpResult.level;
     }
 
     save(data);
@@ -412,6 +453,64 @@ var Store = (function () {
     return !task.completed;
   }
 
+  /* RPG — skins & loot shop */
+  function buySkin(data, skinId) {
+    var check = RPG.canBuySkin(data, skinId);
+    if (!check.ok) return { ok: false, reason: check.reason };
+    var skin = RPG.getSkin(skinId);
+    if (!spendXp(data, skin.cost)) return { ok: false, reason: 'Not enough XP' };
+    if (data.character.unlockedSkins.indexOf(skinId) === -1) {
+      data.character.unlockedSkins.push(skinId);
+    }
+    data.character.skinId = skinId;
+    save(data);
+    return { ok: true, skin: skin };
+  }
+
+  function equipSkin(data, skinId) {
+    if (!RPG.isSkinOwned(data.character, skinId)) return false;
+    data.character.skinId = skinId;
+    save(data);
+    return true;
+  }
+
+  function setHeroName(data, name) {
+    data.character.name = (name || 'Hero').trim().substring(0, 24);
+    save(data);
+  }
+
+  function addShopReward(data, reward) {
+    reward.id = uid();
+    reward.createdAt = Date.now();
+    reward.icon = reward.icon || '🎁';
+    data.shopRewards.push(reward);
+    save(data);
+    return reward;
+  }
+
+  function deleteShopReward(data, id) {
+    data.shopRewards = data.shopRewards.filter(function (r) { return r.id !== id; });
+    save(data);
+  }
+
+  function redeemShopReward(data, id) {
+    var reward = data.shopRewards.find(function (r) { return r.id === id; });
+    if (!reward) return { ok: false, reason: 'Reward not found' };
+    var check = RPG.canRedeemReward(data, reward);
+    if (!check.ok) return { ok: false, reason: check.reason };
+    if (!spendXp(data, reward.cost)) return { ok: false, reason: 'Not enough XP' };
+    data.redemptions.push({
+      id: uid(),
+      rewardId: reward.id,
+      name: reward.name,
+      icon: reward.icon,
+      cost: reward.cost,
+      redeemedAt: Date.now()
+    });
+    save(data);
+    return { ok: true, reward: reward };
+  }
+
   return {
     load: load,
     save: save,
@@ -437,6 +536,12 @@ var Store = (function () {
     resetHabitsDaily: resetHabitsDaily,
     checkPerfectDay: checkPerfectDay,
     getTodayTasks: getTodayTasks,
-    isToday: isToday
+    isToday: isToday,
+    buySkin: buySkin,
+    equipSkin: equipSkin,
+    setHeroName: setHeroName,
+    addShopReward: addShopReward,
+    deleteShopReward: deleteShopReward,
+    redeemShopReward: redeemShopReward
   };
 })();

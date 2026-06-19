@@ -9,6 +9,7 @@ A dopamine-powered life planner built for your old Kindle. Turn mundane to-dos i
 - **Goals** — Monthly, quarterly, and yearly goals with milestones, progress bars, and linked tasks
 - **Daily habits** — Build streaks and earn bonus XP for consistency
 - **Gamification** — Levels, titles, achievements, confetti celebrations, and motivational nudges
+- **RPG Hero** — Character with unlockable skins (earned with XP + milestones), XP wallet, and custom loot shop
 - **AI Coach** — OpenAI-powered plan analysis and per-task how-to advice (optional)
 - **Offline-first PWA** — Works without internet after first load; data stays on your device
 

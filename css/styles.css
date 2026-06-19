@@ -865,6 +865,271 @@ body {
   min-height: 80px;
 }
 
+.hero-avatar-btn {
+  background: var(--bg-card);
+  border: 2px solid var(--accent-gold-dim);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  padding: 0;
+}
+
+.hero-avatar {
+  line-height: 1;
+}
+
+/* ── Hero / RPG ── */
+.hero-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+  border: 2px solid var(--accent-gold-dim);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.hero-portrait-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.hero-aura {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: aura-pulse 2s ease-in-out infinite;
+}
+
+.hero-portrait {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  background: var(--bg-deep);
+  border-radius: 50%;
+  border: 3px solid var(--accent-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  z-index: 1;
+}
+
+@keyframes aura-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.08); opacity: 0.7; }
+}
+
+.aura-default { background: radial-gradient(circle, rgba(179,136,255,0.4), transparent); }
+.aura-fire { background: radial-gradient(circle, rgba(255,107,157,0.5), transparent); }
+.aura-mint { background: radial-gradient(circle, rgba(105,240,174,0.5), transparent); }
+.aura-blue { background: radial-gradient(circle, rgba(100,181,246,0.5), transparent); }
+.aura-shadow { background: radial-gradient(circle, rgba(120,120,140,0.6), transparent); }
+.aura-purple { background: radial-gradient(circle, rgba(179,136,255,0.6), transparent); }
+.aura-gold { background: radial-gradient(circle, rgba(255,213,79,0.6), transparent); }
+.aura-dragon { background: radial-gradient(circle, rgba(255,82,82,0.5), transparent); }
+.aura-cosmic { background: radial-gradient(circle, rgba(100,181,246,0.4), rgba(179,136,255,0.4), transparent); }
+.aura-golden { background: radial-gradient(circle, rgba(255,213,79,0.7), rgba(255,107,157,0.3), transparent); }
+
+.hero-name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed var(--border);
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-family: var(--font);
+  width: 100%;
+  padding: 4px 0;
+  margin-bottom: 4px;
+}
+
+.hero-name-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent-gold);
+}
+
+.hero-class {
+  font-size: 0.85rem;
+  color: var(--accent-purple);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.hero-wallet {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: 6px;
+}
+
+.hero-tagline {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.hero-panel {
+  display: none;
+}
+
+.hero-panel.active {
+  display: block;
+}
+
+.skins-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.skin-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform var(--transition), border-color var(--transition);
+  position: relative;
+}
+
+.skin-card.owned {
+  border-color: rgba(105, 240, 174, 0.4);
+}
+
+.skin-card.equipped {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 16px rgba(255, 213, 79, 0.2);
+}
+
+.skin-card.locked {
+  opacity: 0.55;
+}
+
+.skin-icon {
+  font-size: 2.2rem;
+  margin-bottom: 6px;
+}
+
+.skin-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.skin-cost {
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.skin-req {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.skin-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent-mint);
+  color: var(--bg-deep);
+}
+
+.loot-list, .loot-history {
+  list-style: none;
+  margin-bottom: 16px;
+}
+
+.loot-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.loot-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.loot-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.loot-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.loot-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.loot-cost {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+
+.loot-redeem {
+  padding: 8px 12px;
+  font-size: 0.7rem;
+  min-height: 36px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.loot-history-item {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.unlock-card .unlock-hero {
+  font-size: 4rem;
+  margin-bottom: 8px;
+}
+
+.unlock-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  margin: 8px 0;
+}
+
+.unlock-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
 /* ── AI Coach ── */
 .coach-settings {
   background: var(--bg-card);
