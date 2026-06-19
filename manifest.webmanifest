@@ -1,0 +1,17 @@
+{
+  "name": "Plannr",
+  "short_name": "Plannr",
+  "description": "Dopamine-forward life planner with tasks, streaks, and daily mapping.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0d1a",
+  "theme_color": "#6d4aff",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

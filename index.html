@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Plannr - Dopamine Life Planner</title>
+    <meta name="description" content="A dopamine-forward life planner built for mobile motivation." />
+    <meta name="theme-color" content="#6d4aff" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header card glow">
+        <p class="eyebrow">Level up your day</p>
+        <h1>Plannr</h1>
+        <p class="subtitle">Tiny wins. Big momentum.</p>
+
+        <div class="xp-wrap">
+          <div class="xp-copy">
+            <span id="levelLabel">Level 1</span>
+            <span id="xpLabel">0 XP</span>
+          </div>
+          <div class="progress-track" aria-label="Experience progress">
+            <div id="xpProgress" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat card-soft">
+            <p>Streak</p>
+            <h2><span id="streakCount">0</span> 🔥</h2>
+          </article>
+          <article class="stat card-soft">
+            <p>Done Today</p>
+            <h2 id="doneTodayCount">0</h2>
+          </article>
+          <article class="stat card-soft">
+            <p>Momentum</p>
+            <h2><span id="completionRate">0</span>%</h2>
+          </article>
+        </div>
+      </header>
+
+      <section class="card form-card">
+        <h2>Add mission</h2>
+        <form id="taskForm">
+          <label class="sr-only" for="taskTitle">Task title</label>
+          <input id="taskTitle" name="taskTitle" type="text" maxlength="120" required placeholder="What mundane thing will Future You thank you for?" />
+
+          <div class="row">
+            <label for="taskCategory" class="sr-only">Category</label>
+            <input id="taskCategory" name="taskCategory" type="text" maxlength="30" placeholder="Category (home, work, health)" />
+
+            <label for="taskDueDate" class="sr-only">Due date</label>
+            <input id="taskDueDate" name="taskDueDate" type="date" />
+          </div>
+
+          <fieldset class="difficulty-wrap" aria-label="Task difficulty">
+            <legend>Reward size</legend>
+            <label><input type="radio" name="difficulty" value="easy" checked /> Easy +10</label>
+            <label><input type="radio" name="difficulty" value="medium" /> Medium +20</label>
+            <label><input type="radio" name="difficulty" value="hard" /> Hard +35</label>
+          </fieldset>
+
+          <button class="cta" type="submit">Add mission ✨</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Quest board</h2>
+          <div class="filters" role="tablist" aria-label="Task filters">
+            <button type="button" class="chip active" data-filter="today">Today</button>
+            <button type="button" class="chip" data-filter="week">Week</button>
+            <button type="button" class="chip" data-filter="all">All</button>
+            <button type="button" class="chip" data-filter="done">Done</button>
+          </div>
+        </div>
+        <p id="questHint" class="quest-hint"></p>
+        <ul id="taskList" class="task-list" aria-live="polite"></ul>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>Daily boosts</h2>
+          <form id="habitForm" class="habit-form">
+            <label class="sr-only" for="habitTitle">Habit title</label>
+            <input id="habitTitle" type="text" maxlength="40" placeholder="Add a tiny daily habit" />
+            <button type="submit" class="ghost">Add</button>
+          </form>
+        </div>
+        <ul id="habitList" class="habit-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Day map</h2>
+        <div class="planner-grid">
+          <label>
+            Morning
+            <textarea id="morningPlan" rows="3" placeholder="Top 1-2 tasks before lunch"></textarea>
+          </label>
+          <label>
+            Afternoon
+            <textarea id="afternoonPlan" rows="3" placeholder="Energy dip proof tasks"></textarea>
+          </label>
+          <label>
+            Evening
+            <textarea id="eveningPlan" rows="3" placeholder="Shut-down ritual"></textarea>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <div id="burstLayer" class="burst-layer" aria-hidden="true"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
