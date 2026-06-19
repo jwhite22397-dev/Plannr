@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1a0f2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Plannr — a dopamine-powered life planner for your Kindle">
+  <title>Plannr</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Celebration overlay -->
+    <div id="celebration" class="celebration hidden" aria-hidden="true">
+      <div class="celebration-content">
+        <div class="celebration-emoji" id="celebration-emoji">🎉</div>
+        <div class="celebration-text" id="celebration-text">Nice work!</div>
+        <div class="celebration-xp" id="celebration-xp">+10 XP</div>
+      </div>
+      <canvas id="confetti-canvas"></canvas>
+    </div>
+
+    <!-- Level up overlay -->
+    <div id="levelup" class="levelup hidden" aria-hidden="true">
+      <div class="levelup-card">
+        <div class="levelup-badge">⬆️</div>
+        <h2>Level Up!</h2>
+        <p class="levelup-level" id="levelup-level">Level 5</p>
+        <p class="levelup-title" id="levelup-title">Momentum Maker</p>
+        <button class="btn btn-primary" id="levelup-dismiss">Let's go!</button>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-top">
+        <h1 class="logo">✦ Plannr</h1>
+        <div class="streak-badge" id="streak-badge" title="Day streak">
+          <span class="streak-flame">🔥</span>
+          <span id="streak-count">0</span>
+        </div>
+      </div>
+      <div class="xp-bar-container">
+        <div class="xp-info">
+          <span class="level-label" id="level-label">Lv. 1</span>
+          <span class="xp-label" id="xp-label">0 / 100 XP</span>
+        </div>
+        <div class="xp-bar">
+          <div class="xp-fill" id="xp-fill"></div>
+        </div>
+        <p class="level-title" id="level-title">Fresh Start</p>
+      </div>
+    </header>
+
+    <!-- Daily progress ring -->
+    <section class="daily-progress" id="daily-progress">
+      <div class="progress-ring-wrap">
+        <svg class="progress-ring" viewBox="0 0 120 120">
+          <circle class="progress-ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="progress-ring-fill" id="progress-ring-fill" cx="60" cy="60" r="52"/>
+        </svg>
+        <div class="progress-ring-text">
+          <span class="progress-percent" id="progress-percent">0%</span>
+          <span class="progress-sub">today</span>
+        </div>
+      </div>
+      <div class="daily-stats">
+        <p class="motivation" id="motivation-text">Every small win counts. Start with one.</p>
+        <div class="stat-pills">
+          <span class="pill" id="stat-done">0 done</span>
+          <span class="pill pill-gold" id="stat-xp-today">+0 XP today</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main content views -->
+    <main class="main-content">
+      <!-- Today View -->
+      <section class="view active" id="view-today" data-view="today">
+        <h2 class="section-title">Today's Plan</h2>
+        <p class="date-display" id="date-display"></p>
+
+        <div class="time-blocks" id="time-blocks">
+          <!-- Morning, Afternoon, Evening blocks rendered by JS -->
+        </div>
+
+        <button class="btn btn-add" id="add-task-today">
+          <span class="btn-icon">+</span> Add to today
+        </button>
+      </section>
+
+      <!-- Tasks View -->
+      <section class="view" id="view-tasks" data-view="tasks">
+        <h2 class="section-title">All Tasks</h2>
+        <div class="filter-tabs" id="category-tabs">
+          <button class="tab active" data-category="all">All</button>
+          <button class="tab" data-category="life">Life</button>
+          <button class="tab" data-category="work">Work</button>
+          <button class="tab" data-category="health">Health</button>
+          <button class="tab" data-category="home">Home</button>
+        </div>
+        <ul class="task-list" id="task-list-all"></ul>
+        <button class="btn btn-add" id="add-task">
+          <span class="btn-icon">+</span> New task
+        </button>
+      </section>
+
+      <!-- Habits View -->
+      <section class="view" id="view-habits" data-view="habits">
+        <h2 class="section-title">Daily Habits</h2>
+        <p class="section-sub">Build streaks. Earn bonus XP.</p>
+        <ul class="habit-list" id="habit-list"></ul>
+        <button class="btn btn-add" id="add-habit">
+          <span class="btn-icon">+</span> New habit
+        </button>
+      </section>
+
+      <!-- Rewards View -->
+      <section class="view" id="view-rewards" data-view="rewards">
+        <h2 class="section-title">Trophy Case</h2>
+        <div class="rewards-summary">
+          <div class="reward-stat">
+            <span class="reward-stat-value" id="total-xp">0</span>
+            <span class="reward-stat-label">Total XP</span>
+          </div>
+          <div class="reward-stat">
+            <span class="reward-stat-value" id="best-streak">0</span>
+            <span class="reward-stat-label">Best Streak</span>
+          </div>
+          <div class="reward-stat">
+            <span class="reward-stat-value" id="tasks-completed-total">0</span>
+            <span class="reward-stat-label">Tasks Done</span>
+          </div>
+        </div>
+        <h3 class="subsection-title">Achievements</h3>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </section>
+    </main>
+
+    <!-- Bottom navigation -->
+    <nav class="bottom-nav" role="navigation">
+      <button class="nav-btn active" data-nav="today" aria-label="Today">
+        <span class="nav-icon">☀️</span>
+        <span class="nav-label">Today</span>
+      </button>
+      <button class="nav-btn" data-nav="tasks" aria-label="Tasks">
+        <span class="nav-icon">✓</span>
+        <span class="nav-label">Tasks</span>
+      </button>
+      <button class="nav-btn" data-nav="habits" aria-label="Habits">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-label">Habits</span>
+      </button>
+      <button class="nav-btn" data-nav="rewards" aria-label="Rewards">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Rewards</span>
+      </button>
+    </nav>
+
+    <!-- Modal for add/edit -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-backdrop" id="modal-backdrop"></div>
+      <div class="modal-card">
+        <h3 class="modal-title" id="modal-title">New Task</h3>
+        <form id="modal-form">
+          <input type="hidden" id="modal-id">
+          <input type="hidden" id="modal-type" value="task">
+
+          <label class="field-label" for="modal-text">What needs doing?</label>
+          <input type="text" id="modal-text" class="field-input" placeholder="e.g. Take out recycling" required autocomplete="off">
+
+          <label class="field-label" for="modal-category">Category</label>
+          <select id="modal-category" class="field-input">
+            <option value="life">Life</option>
+            <option value="work">Work</option>
+            <option value="health">Health</option>
+            <option value="home">Home</option>
+          </select>
+
+          <label class="field-label" for="modal-priority">Priority (more XP for harder)</label>
+          <select id="modal-priority" class="field-input">
+            <option value="low">Low — quick win (+5 XP)</option>
+            <option value="medium" selected>Medium (+10 XP)</option>
+            <option value="high">High — boss battle (+20 XP)</option>
+          </select>
+
+          <label class="field-label" for="modal-timeblock">Time of day</label>
+          <select id="modal-timeblock" class="field-input">
+            <option value="morning">🌅 Morning</option>
+            <option value="afternoon">☀️ Afternoon</option>
+            <option value="evening">🌙 Evening</option>
+            <option value="anytime">Anytime</option>
+          </select>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" id="modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="modal-save">Save</button>
+          </div>
+          <button type="button" class="btn btn-danger hidden" id="modal-delete">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/gamification.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function() {});
+    }
+  </script>
+</body>
+</html>
