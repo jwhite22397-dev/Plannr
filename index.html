@@ -156,6 +156,45 @@
         </button>
       </section>
 
+      <!-- Coach View -->
+      <section class="view" id="view-coach" data-view="coach">
+        <h2 class="section-title">AI Coach</h2>
+        <p class="section-sub">Get planning tips and step-by-step advice for your tasks.</p>
+
+        <div class="coach-settings" id="coach-settings">
+          <h3 class="subsection-title">Setup</h3>
+          <p class="coach-security-note">Your API key stays on this device only — never in the app code or GitHub.</p>
+          <label class="field-label" for="coach-api-key">OpenAI API key</label>
+          <input type="password" id="coach-api-key" class="field-input" placeholder="sk-..." autocomplete="off">
+          <label class="field-label" for="coach-api-url">Coach proxy URL (optional)</label>
+          <input type="url" id="coach-api-url" class="field-input" placeholder="https://yoursite.netlify.app/.netlify/functions/coach">
+          <p class="coach-hint">On Netlify, leave key blank and set OPENAI_API_KEY in site settings. On GitHub Pages, use a Netlify proxy URL or enter your key above.</p>
+          <button type="button" class="btn btn-primary btn-sm" id="coach-save-settings">Save settings</button>
+        </div>
+
+        <div class="coach-actions">
+          <button type="button" class="btn btn-primary" id="coach-analyze-plan">
+            ✨ Analyze my plan
+          </button>
+
+          <label class="field-label" for="coach-task-select">Advice for a specific task</label>
+          <select id="coach-task-select" class="field-input">
+            <option value="">Choose a task...</option>
+          </select>
+          <button type="button" class="btn btn-ghost" id="coach-advise-task">
+            💡 How do I do this?
+          </button>
+        </div>
+
+        <div class="coach-response hidden" id="coach-response">
+          <h3 class="subsection-title" id="coach-response-title">Coach says</h3>
+          <div class="coach-loading hidden" id="coach-loading">
+            <span class="coach-spinner"></span> Thinking...
+          </div>
+          <div class="coach-text" id="coach-text"></div>
+        </div>
+      </section>
+
       <!-- Habits View -->
       <section class="view" id="view-habits" data-view="habits">
         <h2 class="section-title">Daily Habits</h2>
@@ -201,6 +240,10 @@
       <button class="nav-btn" data-nav="goals" aria-label="Goals">
         <span class="nav-icon">🎯</span>
         <span class="nav-label">Goals</span>
+      </button>
+      <button class="nav-btn" data-nav="coach" aria-label="Coach">
+        <span class="nav-icon">🤖</span>
+        <span class="nav-label">Coach</span>
       </button>
       <button class="nav-btn" data-nav="habits" aria-label="Habits">
         <span class="nav-icon">🔄</span>
@@ -283,6 +326,7 @@
   <script src="js/planning.js"></script>
   <script src="js/gamification.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/ai-coach.js"></script>
   <script src="js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

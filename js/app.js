@@ -98,6 +98,10 @@
     document.getElementById('modal-cancel').addEventListener('click', closeModal);
     document.getElementById('modal-backdrop').addEventListener('click', closeModal);
     document.getElementById('modal-delete').addEventListener('click', handleDelete);
+
+    document.getElementById('coach-save-settings').addEventListener('click', saveCoachSettings);
+    document.getElementById('coach-analyze-plan').addEventListener('click', runPlanAnalysis);
+    document.getElementById('coach-advise-task').addEventListener('click', runTaskAdvice);
   }
 
   function switchView(view) {
@@ -118,6 +122,7 @@
     renderTaskList();
     renderHabits();
     renderRewards();
+    renderCoach();
   }
 
   function renderHeader() {
@@ -701,6 +706,101 @@
     var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function renderCoach() {
+    document.getElementById('coach-api-key').value = AICoach.getApiKey();
+    document.getElementById('coach-api-url').value = AICoach.getCoachUrl();
+
+    var select = document.getElementById('coach-task-select');
+    var current = select.value;
+    select.innerHTML = '<option value="">Choose a task...</option>';
+
+    var tasks = data.tasks.filter(function (t) { return !t.completed; });
+    tasks.forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t.id;
+      var label = t.text;
+      if (t.horizon && t.horizon !== 'daily') {
+        label += ' (' + Planning.HORIZON_LABELS[t.horizon] + ')';
+      }
+      opt.textContent = label;
+      if (t.id === current) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function saveCoachSettings() {
+    AICoach.setApiKey(document.getElementById('coach-api-key').value);
+    AICoach.setCoachUrl(document.getElementById('coach-api-url').value);
+    showCoachMessage('Settings saved on this device.', 'Coach');
+  }
+
+  function showCoachLoading(show) {
+    document.getElementById('coach-loading').classList.toggle('hidden', !show);
+    document.getElementById('coach-text').classList.toggle('hidden', show);
+  }
+
+  function showCoachMessage(html, title) {
+    document.getElementById('coach-response').classList.remove('hidden');
+    document.getElementById('coach-response-title').textContent = title || 'Coach says';
+    showCoachLoading(false);
+    document.getElementById('coach-text').innerHTML = html;
+  }
+
+  function showCoachError(err) {
+    showCoachMessage('<p class="coach-error">' + escapeHtml(err.message || String(err)) + '</p>', 'Something went wrong');
+  }
+
+  function runPlanAnalysis() {
+    if (!AICoach.hasKey()) {
+      showCoachError(new Error('Add your OpenAI API key or proxy URL in Setup, then tap Save settings.'));
+      return;
+    }
+
+    var cacheKey = 'plan-' + Planning.todayKey();
+    var cached = AICoach.cacheGet(cacheKey);
+    if (cached) {
+      showCoachMessage(AICoach.formatResponse(cached), 'Plan advice (cached)');
+      return;
+    }
+
+    document.getElementById('coach-response').classList.remove('hidden');
+    document.getElementById('coach-response-title').textContent = 'Analyzing your plan...';
+    showCoachLoading(true);
+
+    AICoach.analyzePlan(data).then(function (text) {
+      AICoach.cacheSet(cacheKey, text);
+      showCoachMessage(AICoach.formatResponse(text), 'Plan advice');
+    }).catch(showCoachError);
+  }
+
+  function runTaskAdvice() {
+    var taskId = document.getElementById('coach-task-select').value;
+    if (!taskId) {
+      showCoachError(new Error('Pick a task first.'));
+      return;
+    }
+    if (!AICoach.hasKey()) {
+      showCoachError(new Error('Add your OpenAI API key or proxy URL in Setup, then tap Save settings.'));
+      return;
+    }
+
+    var cacheKey = 'task-' + taskId;
+    var cached = AICoach.cacheGet(cacheKey);
+    if (cached) {
+      showCoachMessage(AICoach.formatResponse(cached), 'Task advice (cached)');
+      return;
+    }
+
+    document.getElementById('coach-response').classList.remove('hidden');
+    document.getElementById('coach-response-title').textContent = 'Thinking about your task...';
+    showCoachLoading(true);
+
+    AICoach.adviseTask(data, taskId).then(function (text) {
+      AICoach.cacheSet(cacheKey, text);
+      showCoachMessage(AICoach.formatResponse(text), 'How to do it');
+    }).catch(showCoachError);
   }
 
   if (document.readyState === 'loading') {

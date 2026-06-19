@@ -636,6 +636,8 @@ body {
   align-items: center;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 20;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nav-btn {
@@ -647,10 +649,11 @@ body {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 8px 16px;
-  min-width: var(--touch-min);
+  padding: 8px 10px;
+  min-width: 52px;
   min-height: var(--touch-min);
   transition: color var(--transition);
+  flex-shrink: 0;
 }
 
 .nav-btn.active {
@@ -860,6 +863,89 @@ body {
 .field-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+/* ── AI Coach ── */
+.coach-settings {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.coach-security-note {
+  font-size: 0.75rem;
+  color: var(--accent-mint);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.coach-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 8px 0 12px;
+  line-height: 1.4;
+}
+
+.coach-actions {
+  margin-bottom: 20px;
+}
+
+.coach-actions .btn {
+  margin-bottom: 12px;
+}
+
+.coach-response {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.coach-text {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.coach-text h3, .coach-text h4 {
+  color: var(--text-primary);
+  margin: 12px 0 6px;
+  font-size: 0.95rem;
+}
+
+.coach-text strong {
+  color: var(--accent-gold);
+}
+
+.coach-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent-purple);
+  font-weight: 600;
+  padding: 12px 0;
+}
+
+.coach-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--bg-elevated);
+  border-top-color: var(--accent-purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.coach-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 /* ── Modal ── */
